@@ -162,29 +162,49 @@ uint32_t FREQUENCY_RoundToStep(uint32_t freq, uint16_t step)
 int32_t TX_freq_check(const uint32_t Frequency)
 {	// return '0' if TX frequency is allowed
 	// otherwise return '-1'
-
+#ifdef ENABLE_TX_STOP_BY_CHIPRANGE
 	if (Frequency < frequencyBandTable[0].lower || Frequency > frequencyBandTable[BAND_N_ELEM - 1].upper)
 		return 1;  // not allowed outside this range
 
 	if (Frequency >= BX4819_band1.upper && Frequency < BX4819_band2.lower)
 		return -1;  // BX chip does not work in this range
+#endif
+
+#ifdef ENABLE_HAMBAND_TX_CONTROL
+	if (Frequency >= frequencyBandTable[BAND4_174MHz].lower && Frequency < frequencyBandTable[BAND4_174MHz].upper)
+		if (gSetting_200TX)
+			return 0;
+
+	if (gSetting_500TX && Frequency > 90200000 && Frequency < 92800000)
+		return 0;
+
+	if (gSetting_350TX && Frequency > 127000000 && Frequency < 129500000)
+		return 0;
+
+	if (gSetting_350EN && Frequency > 126000000 && Frequency < 130000000)
+		return 0;
+#endif
 
 	switch (gSetting_F_LOCK)
 	{
 		case F_LOCK_DEF:
 			if (Frequency >= frequencyBandTable[BAND3_137MHz].lower && Frequency < frequencyBandTable[BAND3_137MHz].upper)
 				return 0;
+			if (Frequency >= frequencyBandTable[BAND6_400MHz].lower && Frequency < frequencyBandTable[BAND6_400MHz].upper)
+				return 0;
+#ifndef ENABLE_HAMBAND_TX_CONTROL
 			if (Frequency >= frequencyBandTable[BAND4_174MHz].lower && Frequency < frequencyBandTable[BAND4_174MHz].upper)
 				if (gSetting_200TX)
 					return 0;
 			if (Frequency >= frequencyBandTable[BAND5_350MHz].lower && Frequency < frequencyBandTable[BAND5_350MHz].upper)
 				if (gSetting_350TX && gSetting_350EN)
 					return 0;
-			if (Frequency >= frequencyBandTable[BAND6_400MHz].lower && Frequency < frequencyBandTable[BAND6_400MHz].upper)
-				return 0;
 			if (Frequency >= frequencyBandTable[BAND7_470MHz].lower && Frequency <= 60000000)
 				if (gSetting_500TX)
 					return 0;
+			if (gSetting_500TX && Frequency > 120000000 && Frequency < 123000000)
+				return 0;
+#endif				
 			break;
 
 		case F_LOCK_FCC:

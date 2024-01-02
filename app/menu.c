@@ -46,7 +46,9 @@
 	#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
+#ifdef ENABLE_10TIME_TRY_UNALL_LOCK
 uint8_t gUnlockAllTxConfCnt;
+#endif
 
 #ifdef ENABLE_F_CAL_MENU
 	void writeXtalFreqCal(const int32_t value, const bool update_eeprom)
@@ -229,7 +231,9 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		#ifdef ENABLE_AUDIO_BAR
 			case MENU_MIC_BAR:
 		#endif
+#ifdef ENABLE_BCL
 		case MENU_BCL:
+#endif
 		case MENU_BEEP:
 		case MENU_AUTOLK:
 		case MENU_S_ADD1:
@@ -477,10 +481,12 @@ void MENU_AcceptSetting(void)
 			gRequestSaveChannel     = 1;
 			return;
 
+#ifdef ENABLE_BCL
 		case MENU_BCL:
 			gTxVfo->BUSY_CHANNEL_LOCK = gSubMenuSelection;
 			gRequestSaveChannel       = 1;
 			return;
+#endif			
 
 		case MENU_MEM_CH:
 			gTxVfo->CHANNEL_SAVE = gSubMenuSelection;
@@ -729,6 +735,7 @@ void MENU_AcceptSetting(void)
 			break;
 
 		case MENU_F_LOCK: {
+#ifdef ENABLE_10TIME_TRY_UNALL_LOCK			
 			if(gSubMenuSelection == F_LOCK_NONE) { // select 10 times to enable
 				gUnlockAllTxConfCnt++;
 				if(gUnlockAllTxConfCnt < 10)
@@ -736,7 +743,7 @@ void MENU_AcceptSetting(void)
 			}
 			else
 				gUnlockAllTxConfCnt = 0;
-
+#endif
 			gSetting_F_LOCK = gSubMenuSelection;
 			break;
 		}
@@ -903,10 +910,11 @@ void MENU_ShowCurrentSetting(void)
 		case MENU_SCR:
 			gSubMenuSelection = gTxVfo->SCRAMBLING_TYPE;
 			break;
-
+#ifdef ENABLE_BCL
 		case MENU_BCL:
 			gSubMenuSelection = gTxVfo->BUSY_CHANNEL_LOCK;
 			break;
+#endif			
 
 		case MENU_MEM_CH:
 			#if 0

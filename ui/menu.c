@@ -128,9 +128,17 @@ const t_menu_item MenuList[] =
 	// enabled if pressing both the PTT and upper side button at power-on
 	{"F Lock", VOICE_ID_INVALID,                       MENU_F_LOCK        },
 	{"Tx 200", VOICE_ID_INVALID,                       MENU_200TX         }, // was "200TX"
+
+#ifdef ENABLE_HAMBAND_TX_CONTROL	
+	{"Tx1270", VOICE_ID_INVALID,                       MENU_350TX         }, // 1.270Ghz US Style
+	{"Tx 900", VOICE_ID_INVALID,                       MENU_500TX         }, // 900Mhz
+	{"Tx1260", VOICE_ID_INVALID,                       MENU_350EN         }, // 1.260Ghz Asia Style
+#else	
 	{"Tx 350", VOICE_ID_INVALID,                       MENU_350TX         }, // was "350TX"
 	{"Tx 500", VOICE_ID_INVALID,                       MENU_500TX         }, // was "500TX"
 	{"350 En", VOICE_ID_INVALID,                       MENU_350EN         }, // was "350EN"
+#endif
+
 	{"ScraEn", VOICE_ID_INVALID,                       MENU_SCREN         }, // was "SCREN"
 #ifdef ENABLE_F_CAL_MENU
 	{"FrCali", VOICE_ID_INVALID,                       MENU_F_CALI        }, // reference xtal calibration
@@ -799,9 +807,11 @@ void UI_DisplayMenu(void)
 			break;
 
 		case MENU_F_LOCK:
+#ifdef ENABLE_10TIME_TRY_UNALL_LOCK
 			if(!gIsInSubMenu && gUnlockAllTxConfCnt>0 && gUnlockAllTxConfCnt<10)
 				strcpy(String, "READ\nMANUAL");
 			else
+#endif			
 				strcpy(String, gSubMenu_F_LOCK[gSubMenuSelection]);
 			break;
 

@@ -16,6 +16,12 @@ ENABLE_PWRON_PASSWORD         ?= 0
 ENABLE_DTMF_CALLING           ?= 1
 ENABLE_FLASHLIGHT             ?= 1
 
+# ---- STOCK QUANSHENG FERATURES for Reduce Usage Flash memroy ----
+ENABLE_BCL                    ?= 0
+ENABLE_10TIME_TRY_UNALL_LOCK  ?= 0
+ENABLE_TX_STOP_BY_CHIPRANGE   ?= 0
+ENABLE_HAMBAND_TX_CONTROL     ?= 1
+
 # ---- CUSTOM MODS ----
 ENABLE_BIG_FREQ               ?= 1
 ENABLE_SMALL_BOLD             ?= 1
@@ -200,21 +206,14 @@ endif
 OBJCOPY = arm-none-eabi-objcopy
 SIZE = arm-none-eabi-size
 
-AUTHOR_STRING ?= EGZUMER
+# CHANGE AUTHOR
+#It is only used to specify the source code and is no longer used (it is not compiled).
+AUTHOR_STRING ?= KD8CEC_FROM_SOURCE_CODE_EGZUMER
 # the user might not have/want git installed
 # can set own version string here (max 7 chars)
-ifneq (, $(shell $(WHERE) git))
-	VERSION_STRING ?= $(shell git describe --tags --exact-match 2>$(NULL_OUTPUT))
-	ifeq (, $(VERSION_STRING))
-    	VERSION_STRING := $(shell git rev-parse --short HEAD)
-	endif
-endif
-# If there is still no VERSION_STRING we need to make one.
-# It is needed for the firmware packing script
-ifeq (, $(VERSION_STRING))
-	VERSION_STRING := NOGIT
-endif
-#VERSION_STRING := 230930b
+
+# CHANGE VERSION TYPE
+VERSION_STRING ?= CEC_0.01b
 
 
 ASFLAGS = -c -mcpu=cortex-m0
@@ -224,7 +223,8 @@ endif
 
 CFLAGS =
 ifeq ($(ENABLE_CLANG),0)
-	CFLAGS += -Os -Wall -Werror -mcpu=cortex-m0 -fno-builtin -fshort-enums -fno-delete-null-pointer-checks -std=c2x -MMD
+	CFLAGS += -Os -mcpu=cortex-m0 -fno-builtin -fshort-enums -fno-delete-null-pointer-checks -std=c11 -MMD
+	#CFLAGS += -Os -Wall -Werror -mcpu=cortex-m0 -fno-builtin -fshort-enums -fno-delete-null-pointer-checks -std=c2x -MMD
 	#CFLAGS += -Os -Wall -Werror -mcpu=cortex-m0 -fno-builtin -fshort-enums -fno-delete-null-pointer-checks -std=c11 -MMD
 	#CFLAGS += -Os -Wall -Werror -mcpu=cortex-m0 -fno-builtin -fshort-enums -fno-delete-null-pointer-checks -std=c99 -MMD
 	#CFLAGS += -Os -Wall -Werror -mcpu=cortex-m0 -fno-builtin -fshort-enums -fno-delete-null-pointer-checks -std=gnu99 -MMD
@@ -377,6 +377,23 @@ endif
 ifeq ($(ENABLE_CUSTOM_MENU_LAYOUT),1)
 	CFLAGS  += -DENABLE_CUSTOM_MENU_LAYOUT
 endif
+
+# ---- STOCK QUANSHENG FERATURES for Reduce Usage Flash memroy ----
+ifeq ($(ENABLE_BCL),1)
+	CFLAGS  += -DENABLE_BCL
+endif
+ifeq ($(ENABLE_10TIME_TRY_UNALL_LOCK),1)
+	CFLAGS  += -DENABLE_10TIME_TRY_UNALL_LOCK
+endif
+ifeq ($(ENABLE_TX_STOP_BY_CHIPRANGE),1)
+	CFLAGS  += -DENABLE_TX_STOP_BY_CHIPRANGE
+endif
+ifeq ($(ENABLE_HAMBAND_TX_CONTROL),1)
+	CFLAGS  += -DENABLE_HAMBAND_TX_CONTROL
+endif
+
+# ---- END OF Option
+
 
 LDFLAGS =
 LDFLAGS += -z noexecstack -mcpu=cortex-m0 -nostartfiles -Wl,-T,firmware.ld -Wl,--gc-sections

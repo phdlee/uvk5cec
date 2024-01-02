@@ -58,5 +58,5 @@ make
 
 
 
-pause
-@echo on
+::pause
+::@echo on
