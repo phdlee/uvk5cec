@@ -1,4 +1,12 @@
-
+# Version 0.1b (January 2, 2024)
+I worked on the first firmware. I did what was requested by the user.
+Alternatively, functions that are not greatly needed in amateur radio were changed to those that are needed in amateur radio.
+1. I took the source code from https://github.com/egzumer/uv-k5-firmware-custom and created a new project.
+2. Change the environment so that it can be used in Visual Studio Code  (win_make.bat, makefile option ...)
+3. Remove some unnecessary variables for operation
+4. Changed the BCL function to be selectable at the compilation stage. (Because BCL is not often used in amateur radio), If you need the BCL function, just set the compilation options. (ENABLE_BCL  ?= 0)
+5. Changed all band TX activation from 10 times to once (this can also be operated in the old form in the makefile) (This is because you working in the Hiddel Menu anyway)
+6. The 350TX, 350EN, and 500TX functions have been changed to amateur radio bands. Even if TX 350 and TX 500 are ENABLE, they only operate under certain conditions. (Default Range Mode) , In countries where the TX function must be tested for radio use, TX on all frequencies must be within range. To receive permission for 900Mhz or 1.2Ghz, just enable TX900 and (TX126 OR TX127 - Each country has different licensed frequency bands. Just choose the band that suits you.)
 
 
 # Important notice about firmware  
