@@ -1,3 +1,26 @@
+
+
+
+# Important notice about firmware  
+* The program will be modified starting today (January 2, 2024) based on egzummer's UV_K5 version.
+* Any parts that are added or removed from existing features will be specified above this part.
+* I plan to add quite a few features, and to secure flash memory space, I plan to remove visual elements that do not have a significant impact on radio performance. (ex : bargraph, icon, usb connected...)
+* The source will continue to be modified, and the compiled firmware will be released as a beta version.
+* Sources will be uploaded by major version (ex : version 1.0, 2.0, 3.0). This is because there is a high possibility that sources will be created or removed in large units.
+* See below for all features and descriptions prior to January 2, 2024. 
+
+I am always grateful to the UV-K5 firmware contributors for creating a new playground.
+DE KD8CE
+
+----------------------------------------------------------------------------------
+# The source was taken from the EGZUMER repository on January 2, 2024 
+ * Please refer to the previous functions below.
+ * This firmware contains various experimental elements. It will be distributed as a beta version before releasing the major version.
+ * EGZUMMER's firmware for the stable version.
+ * Once again, we would like to thank Dual Tachyon and egzummer for doing such great work and providing a playground for many developers.
+-----------------------------------------------------------------------------------
+
+
 # Open re-implementation of the Quansheng UV-K5/K6/5R v2.1.27 firmware
 
 This repository is a merge of [OneOfEleven custom firmware](https://github.com/OneOfEleven/uv-k5-firmware-custom) with [fagci spectrum analizer](https://github.com/fagci/uv-k5-firmware-fagci-mod/tree/refactor) plus my few changes.<br>
