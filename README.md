@@ -1,3 +1,15 @@
+# Version 0.1c (January 5, 2024)
+Detailed explanations are provided in the link below.
+http://www.hamskey.com
+
+This version fixes the parts that amateur radio operators found most inconvenient.
+1. Add Mhz button when entering frequency. If you want to move the frequency to 28.010, enter 28*010  (* button as Mhz button)
+2. Operating in Live mode when moving the frequency quickly (receiving while moving the frequency)
+3. Free up some memory for future tasks
+4. This version is a stable version and the source code was released together. Various experimental elements will be added from the next version, and as announced, the source code will be finalized and released upon the release of version 1.0.
+
+
+
 # Version 0.1b (January 2, 2024)
 I worked on the first firmware. I did what was requested by the user.
 Alternatively, functions that are not greatly needed in amateur radio were changed to those that are needed in amateur radio.
