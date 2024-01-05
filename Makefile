@@ -13,7 +13,7 @@ ENABLE_VOX                    ?= 1
 ENABLE_ALARM                  ?= 0
 ENABLE_TX1750                 ?= 0
 ENABLE_PWRON_PASSWORD         ?= 0
-ENABLE_DTMF_CALLING           ?= 1
+ENABLE_DTMF_CALLING           ?= 0	#Default Disabled by KD8CEC
 ENABLE_FLASHLIGHT             ?= 1
 
 # ---- STOCK QUANSHENG FERATURES for Reduce Usage Flash memroy ----
@@ -84,6 +84,14 @@ ifeq ($(ENABLE_OVERLAY),1)
 	OBJS += sram-overlay.o
 endif
 OBJS += external/printf/printf.o
+
+#################### ADDED BY KD8CEC  ###################
+# IF YOU USE THIS FUNCTION, COPY BELOW TO OTHER FIRMWARE#
+#########################################################
+OBJS += ceccommon.o
+
+
+################### END OF ADDED BY KD8CEC ##############
 
 # Drivers
 OBJS += driver/adc.o
@@ -213,7 +221,7 @@ AUTHOR_STRING ?= KD8CEC_FROM_SOURCE_CODE_EGZUMER
 # can set own version string here (max 7 chars)
 
 # CHANGE VERSION TYPE
-VERSION_STRING ?= CEC_0.01b
+VERSION_STRING ?= CEC_0.01c
 
 
 ASFLAGS = -c -mcpu=cortex-m0

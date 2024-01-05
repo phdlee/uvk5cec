@@ -42,6 +42,7 @@
 #include "ui/inputbox.h"
 #include "ui/ui.h"
 #include <stdlib.h>
+#include "ceccommon.h"
 
 void toggle_chan_scanlist(void)
 {	// toggle the selected channels scanlist setting
@@ -590,8 +591,35 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 	
 	if (gInputBoxIndex)
 	{
-		if (!bKeyHeld && bKeyPressed)
-			gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
+//KD8CEC. ianlee 
+        if (!bKeyHeld && bKeyPressed)
+        {
+            gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
+
+            if (gScanStateDir == SCAN_OFF)
+            {
+                if (gInputBoxIndex == 0)
+                    return;
+
+                if (gInputBoxIndex < 3 || (gTxVfo->pRX->Frequency >= _1GHz_in_KHz && gInputBoxIndex < 4))
+                {
+                    int pointDepth = gTxVfo->pRX->Frequency >= _1GHz_in_KHz ? 4 : 3;
+
+                    //0123
+                    //2__.__
+                    for (int i = gInputBoxIndex -1; i >= 0; i--)
+                        gInputBox[i + (pointDepth - gInputBoxIndex)] = gInputBox[i];
+
+                    for (int i = 0; i < pointDepth - gInputBoxIndex; i++)
+                        gInputBox[i] =0;
+
+                    gInputBoxIndex = pointDepth;
+                }
+                
+                gKeyInputCountdown = key_input_timeout_500ms;
+            }           
+        }
+        //end of ianlee for easy input frequency		
 		return;
 	}
 
@@ -715,6 +743,7 @@ static void MAIN_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 				gTxVfo->freq_config_RX.Frequency = frequency;
 
 				gRequestSaveChannel = 1;
+				CEC_ApplyChangeRXFreq(11 + Direction);
 				return;
 			}
 

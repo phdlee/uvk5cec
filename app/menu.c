@@ -41,6 +41,7 @@
 #include "ui/inputbox.h"
 #include "ui/menu.h"
 #include "ui/ui.h"
+#include "ceccommon.h"
 
 #ifndef ARRAY_SIZE
 	#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -115,25 +116,32 @@ void MENU_StopCssScan(void)
 
 int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 {
+	*pMin = 0;	//Move by KD8CEC, for reduce memory, about 50byte 
+	            // 57948      44    3284   61276    ef5c firmware => 57896      44    3284   61224    ef28 firmware
 	switch (menu_id)
 	{
+		//============= KD8CEC WORK ==================
+		case MENU_LIVESEEK:
+			//*pMin = 0;
+			*pMax = ARRAY_SIZE(gSubMenu_LIVESEEK) - 1;
+			break;
+		//============= END OF KD8CEC WORK ===========
 		case MENU_SQL:
-			*pMin = 0;
 			*pMax = 9;
 			break;
 
 		case MENU_STEP:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = STEP_N_ELEM - 1;
 			break;
 
 		case MENU_ABR:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_BACKLIGHT) - 1;
 			break;
 
 		case MENU_ABR_MIN:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = 9;
 			break;
 
@@ -143,85 +151,85 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			break;
 
 		case MENU_F_LOCK:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_F_LOCK) - 1;
 			break;
 
 		case MENU_MDF:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_MDF) - 1;
 			break;
 
 		case MENU_TXP:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_TXP) - 1;
 			break;
 
 		case MENU_SFT_D:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_SFT_D) - 1;
 			break;
 
 		case MENU_TDR:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_RXMode) - 1;
 			break;
 
 		#ifdef ENABLE_VOICE
 			case MENU_VOICE:
-				*pMin = 0;
+				//*pMin = 0;
 				*pMax = ARRAY_SIZE(gSubMenu_VOICE) - 1;
 				break;
 		#endif
 
 		case MENU_SC_REV:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_SC_REV) - 1;
 			break;
 
 		case MENU_ROGER:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_ROGER) - 1;
 			break;
 
 		case MENU_PONMSG:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_PONMSG) - 1;
 			break;
 
 		case MENU_R_DCS:
 		case MENU_T_DCS:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = 208;
 			//*pMax = (ARRAY_SIZE(DCS_Options) * 2);
 			break;
 
 		case MENU_R_CTCS:
 		case MENU_T_CTCS:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(CTCSS_Options);
 			break;
 
 		case MENU_W_N:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_W_N) - 1;
 			break;
 
 		#ifdef ENABLE_ALARM
 			case MENU_AL_MOD:
-				*pMin = 0;
+				//*pMin = 0;
 				*pMax = ARRAY_SIZE(gSubMenu_AL_MOD) - 1;
 				break;
 		#endif
 
 		case MENU_RESET:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_RESET) - 1;
 			break;
 
 		case MENU_COMPAND:
 		case MENU_ABR_ON_TX_RX:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_RX_TX) - 1;
 			break;
 
@@ -252,22 +260,22 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_500TX:
 		case MENU_350EN:
 		case MENU_SCREN:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_OFF_ON) - 1;
 			break;
 
 		case MENU_AM:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gModulationStr) - 1;
 			break;
 
 		case MENU_SCR:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_SCRAMBLER) - 1;
 			break;
 
 		case MENU_TOT:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_TOT) - 1;
 			break;
 
@@ -275,7 +283,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			case MENU_VOX:
 		#endif
 		case MENU_RP_STE:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = 10;
 			break;
 
@@ -283,7 +291,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_1_CALL:
 		case MENU_DEL_CH:
 		case MENU_MEM_NAME:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = MR_CHANNEL_LAST;
 			break;
 
@@ -294,17 +302,17 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			break;
 
 		case MENU_SAVE:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_SAVE) - 1;
 			break;
 
 		case MENU_MIC:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = 4;
 			break;
 
 		case MENU_S_LIST:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = 2;
 			break;
 
@@ -315,12 +323,12 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			break;
 #endif
 		case MENU_PTT_ID:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_PTT_ID) - 1;
 			break;
 
 		case MENU_BAT_TXT:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_BAT_TXT) - 1;
 			break;
 
@@ -354,7 +362,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			break;
 
 		case MENU_BATTYP:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = 1;
 			break;
 
@@ -363,7 +371,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_F2SHRT:
 		case MENU_F2LONG:
 		case MENU_MLONG:
-			*pMin = 0;
+			//*pMin = 0;
 			*pMax = gSubMenu_SIDEFUNCTIONS_size-1;
 			break;
 
@@ -572,6 +580,10 @@ void MENU_AcceptSetting(void)
 
 		case MENU_MDF:
 			gEeprom.CHANNEL_DISPLAY_MODE = gSubMenuSelection;
+			break;
+
+		case MENU_LIVESEEK:
+			CEC_LiveSeekMode = gSubMenuSelection;
 			break;
 
 		case MENU_AUTOLK:
@@ -978,6 +990,10 @@ void MENU_ShowCurrentSetting(void)
 
 		case MENU_MDF:
 			gSubMenuSelection = gEeprom.CHANNEL_DISPLAY_MODE;
+			break;
+
+		case MENU_LIVESEEK:
+			gSubMenuSelection = CEC_LiveSeekMode;
 			break;
 
 		case MENU_AUTOLK:

@@ -49,6 +49,8 @@
 #include "ui/lock.h"
 #include "ui/welcome.h"
 #include "ui/menu.h"
+#include "ceccommon.h"
+
 void _putchar(__attribute__((unused)) char c)
 {
 
@@ -226,8 +228,10 @@ void Main(void)
 
 			APP_TimeSlice10ms();
 
-			if (gNextTimeslice_500ms) {
+			if (gNextTimeslice_500ms) 
+			{
 				APP_TimeSlice500ms();
+				CEC_TimeSlice500ms();
 			}
 		}
 	}

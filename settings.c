@@ -25,6 +25,7 @@
 #include "misc.h"
 #include "settings.h"
 #include "ui/menu.h"
+#include "ceccommon.h"
 
 static const uint32_t gDefaultFrequencyTable[] =
 {
@@ -276,6 +277,15 @@ void SETTINGS_InitEEPROM(void)
 			return;
 		}
 	}
+
+	//KD8CEC WORK ===================================
+	EEPROM_ReadBuffer(CEC_EEPROM_START1 + 0, Data, 8);
+	CEC_LiveSeekMode = Data[0] < 7 ? Data[0] : 0;  //
+	CW_KEYTYPE 		 = Data[1] < 7 ? Data[1] : 0;  //
+	CW_SPEED 		 = Data[2] < 51 && Data[2] > 4 ? Data[2] : 10;  //
+	CW_TONE 		 = Data[3] < 120 ? Data[3] : 70;  //
+	//END OF KD8CEC WORK ============================
+
 }
 
 void SETTINGS_LoadCalibration(void)
@@ -588,6 +598,20 @@ void SETTINGS_SaveSettings(void)
 	State[7] = (State[7] & ~(3u << 6)) | ((gSetting_backlight_on_tx_rx & 3u) << 6);
 
 	EEPROM_WriteBuffer(0x0F40, State);
+
+
+
+	//KD8CEC WORK ===================================
+	State[0] = CEC_LiveSeekMode;
+	State[1] = CW_KEYTYPE;
+	State[2] = CW_SPEED;
+	State[3] = CW_TONE;
+	State[4] = 0xFF;
+	State[5] = 0xFF;
+	State[6] = 0xFF;
+	State[7] = 0xFF;
+	EEPROM_WriteBuffer(CEC_EEPROM_START1 + 0, State);
+	//END OF KD8CEC WORK ============================	
 }
 
 void SETTINGS_SaveChannel(uint8_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, uint8_t Mode)
@@ -632,6 +656,7 @@ void SETTINGS_SaveChannel(uint8_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, 
 		State._8[7] =  pVFO->SCRAMBLING_TYPE;
 		EEPROM_WriteBuffer(OffsetVFO + 8, State._8);
 
+		
 		SETTINGS_UpdateChannel(Channel, pVFO, true);
 
 		if (IS_MR_CHANNEL(Channel)) {

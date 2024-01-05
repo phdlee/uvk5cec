@@ -46,7 +46,7 @@ VfoState_t     VfoState[2];
 const char gModulationStr[MODULATION_UKNOWN][4] = {
 	[MODULATION_FM]="FM",
 	[MODULATION_AM]="AM",
-	[MODULATION_USB]="USB",
+	[MODULATION_USB]="SSB",
 
 #ifdef ENABLE_BYP_RAW_DEMODULATORS
 	[MODULATION_BYP]="BYP",

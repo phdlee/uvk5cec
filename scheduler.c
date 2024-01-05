@@ -111,3 +111,8 @@ void SystickHandler(void)
 
 	DECREMENT(boot_counter_10ms);
 }
+
+uint32_t millis10()
+{
+	return  gGlobalSysTickCounter;
+}

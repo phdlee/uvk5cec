@@ -36,6 +36,7 @@
 #include "ui/inputbox.h"
 #include "ui/main.h"
 #include "ui/ui.h"
+#include "ceccommon.h"
 
 center_line_t center_line = CENTER_LINE_NONE;
 
@@ -790,6 +791,9 @@ void UI_DisplayMain(void)
 #endif
 		}
 	}
+
+	if (CommBuffUsingType == COMBUFF_USE_SEEK_RSSI)
+		DrawCommBuffToSpectrum();
 
 	ST7565_BlitFullScreen();
 }

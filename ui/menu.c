@@ -49,6 +49,9 @@ const t_menu_item MenuList[] =
 	{"TxODir", VOICE_ID_TX_OFFSET_FREQUENCY_DIRECTION, MENU_SFT_D         }, // was "SFT_D"
 	{"TxOffs", VOICE_ID_TX_OFFSET_FREQUENCY,           MENU_OFFSET        }, // was "OFFSET"
 	{"W/N",    VOICE_ID_CHANNEL_BANDWIDTH,             MENU_W_N           },
+
+	{"Live.S", VOICE_ID_CHANNEL_BANDWIDTH,             MENU_LIVESEEK      }, //by KD8CEC
+
 	{"Scramb", VOICE_ID_SCRAMBLER_ON,                  MENU_SCR           }, // was "SCR"
 	{"BusyCL", VOICE_ID_BUSY_LOCKOUT,                  MENU_BCL           }, // was "BCL"
 	{"Compnd", VOICE_ID_INVALID,                       MENU_COMPAND       },
@@ -233,6 +236,14 @@ const char* const gSubMenu_MDF[] =
 	"NAME",
 	"NAME\n+\nFREQ"
 };
+
+const char gSubMenu_LIVESEEK[3][6] =
+{
+	"NONE",
+	"LIVE",
+	"LIVE+"
+};
+
 
 #ifdef ENABLE_ALARM
 	const char gSubMenu_AL_MOD[][5] =
@@ -722,6 +733,10 @@ void UI_DisplayMenu(void)
 
 		case MENU_MDF:
 			strcpy(String, gSubMenu_MDF[gSubMenuSelection]);
+			break;
+
+		case MENU_LIVESEEK:
+			strcpy(String, gSubMenu_LIVESEEK[gSubMenuSelection]);
 			break;
 
 		case MENU_RP_STE:

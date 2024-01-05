@@ -48,6 +48,7 @@ enum
 	MENU_DEL_CH,
 	MENU_MEM_NAME,
 	MENU_MDF,
+	MENU_LIVESEEK,
 	MENU_SAVE,
 #ifdef ENABLE_VOX
 	MENU_VOX,
@@ -148,6 +149,9 @@ extern const char* const gSubMenu_MDF[4];
 #ifdef ENABLE_DTMF_CALLING
 extern const char        gSubMenu_D_RSP[4][11];
 #endif
+
+extern const char gSubMenu_LIVESEEK[3][6];
+
 extern const char* const gSubMenu_PTT_ID[5];
 extern const char        gSubMenu_PONMSG[4][8];
 extern const char        gSubMenu_ROGER[3][6];
