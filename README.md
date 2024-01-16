@@ -1,13 +1,26 @@
-# Version 0.1c (January 5, 2024)
+# Version 0.1M (January 13, 2024)
 Detailed explanations are provided in the link below.
 http://www.hamskey.com
 
+- Improved variables that use excessive memory to secure program memory
+- Removal of the spectrum function (it is maintained in the source code. If you need it, you can select the activation option when distributing the source code later)
+- Added CW, CWF, CWN modes
+- Added CW-related settings
+The current version will be tested for 1-2 weeks and then redistributed as stable version 0.2. If you don't want to be a beta tester, you can download 0.2 in 1-2 weeks.
+
+
+# Version 0.1M (January 10, 2024)
+1. Add Text Configuration (Call sign, name, dx callsign, dx name, grid, CW Messages for builtin keyer)
+2. Add Some function to Text Editor
+3. Builtin SSTV Transmitter   (M1 Mode) (not need any device, stand alone)
+
+
+# Version 0.1c (January 5, 2024)
 This version fixes the parts that amateur radio operators found most inconvenient.
 1. Add Mhz button when entering frequency. If you want to move the frequency to 28.010, enter 28*010  (* button as Mhz button)
 2. Operating in Live mode when moving the frequency quickly (receiving while moving the frequency)
 3. Free up some memory for future tasks
 4. This version is a stable version and the source code was released together. Various experimental elements will be added from the next version, and as announced, the source code will be finalized and released upon the release of version 1.0.
-
 
 
 # Version 0.1b (January 2, 2024)
