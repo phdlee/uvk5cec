@@ -1,7 +1,13 @@
-# Version 0.1P (January 13, 2024)
+# Version 0.1HF (January 19, 2024) - (another version)
 Detailed explanations are provided in the link below.
 http://www.hamskey.com
 
+- Separate version released for UV-K5 modified with SI4732-A10
+- This version is different from the existing CEC version. To run this firmware as a testing version, be sure to remove BK1080 and replace it with SI4732-A10.
+- Remove all unnecessary functions other than the basic functions of the radio (to secure programming space)
+
+
+# Version 0.1P (January 13, 2024)
 - Improved variables that use excessive memory to secure program memory
 - Removal of the spectrum function (it is maintained in the source code. If you need it, you can select the activation option when distributing the source code later)
 - Added CW, CWF, CWN modes
