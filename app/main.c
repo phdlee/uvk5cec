@@ -591,7 +591,7 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 	
 	if (gInputBoxIndex)
 	{
-//KD8CEC. ianlee 
+// KD8CEC: treat * as MHz separator while entering frequency
         if (!bKeyHeld && bKeyPressed)
         {
             gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
@@ -619,7 +619,7 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
                 gKeyInputCountdown = key_input_timeout_500ms;
             }           
         }
-        //end of ianlee for easy input frequency		
+        // end of KD8CEC easy frequency input
 		return;
 	}
 
