@@ -1,3 +1,17 @@
+# Source code update (September 15, 2026)
+
+The CEC UV-K5 firmware **source tree in this repository is open**.
+
+- Source was originally planned for a full open release at version 1.0.
+- Development paused before that milestone, so the source is confirmed open as of **September 15, 2026**.
+- Announcement: http://www.hamskey.com/2026/09/cec-uv-k5-firmware-source-is-now-open.html
+- Repository: https://github.com/phdlee/uvk5cec
+- Firmware binaries remain available under [Releases](https://github.com/phdlee/uvk5cec/releases).
+
+This is experimental firmware. Use it at your own risk and follow your local regulations.
+
+---
+
 # Version 0.1HF (January 19, 2024) - (another version)
 Detailed explanations are provided in the link below.
 http://www.hamskey.com
@@ -45,7 +59,7 @@ Alternatively, functions that are not greatly needed in amateur radio were chang
 * Any parts that are added or removed from existing features will be specified above this part.
 * I plan to add quite a few features, and to secure flash memory space, I plan to remove visual elements that do not have a significant impact on radio performance. (ex : bargraph, icon, usb connected...)
 * The source will continue to be modified, and the compiled firmware will be released as a beta version.
-* Sources will be uploaded by major version (ex : version 1.0, 2.0, 3.0). This is because there is a high possibility that sources will be created or removed in large units.
+* **Update (September 15, 2026):** Source in this repository is open now (see the top of this README). Earlier notes about waiting for version 1.0 are historical.
 * See below for all features and descriptions prior to January 2, 2024. 
 
 I am always grateful to the UV-K5 firmware contributors for creating a new playground.
