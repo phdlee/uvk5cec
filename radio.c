@@ -36,6 +36,8 @@
 #include "radio.h"
 #include "settings.h"
 #include "ui/menu.h"
+#include "ceccommon.h"
+#include "cecmorse.h"
 
 VFO_Info_t    *gTxVfo;
 VFO_Info_t    *gRxVfo;
@@ -44,10 +46,13 @@ DCS_CodeType_t gCurrentCodeType;
 VfoState_t     VfoState[2];
 
 const char gModulationStr[MODULATION_UKNOWN][4] = {
-	[MODULATION_FM]="FM",
-	[MODULATION_AM]="AM",
-	[MODULATION_USB]="SSB",
+	[MODULATION_FM  ]	="FM",
+	[MODULATION_AM  ]	="AM",
+	[MODULATION_SSB ]	="SSB",
 
+	[MODULATION_CW  ]	="CW",
+	[MODULATION_CWFM]	="CWF",
+	[MODULATION_CWN ]	="CWN",
 #ifdef ENABLE_BYP_RAW_DEMODULATORS
 	[MODULATION_BYP]="BYP",
 	[MODULATION_RAW]="RAW"
@@ -59,10 +64,14 @@ const char gModulationStr[MODULATION_UKNOWN][4] = {
 bool RADIO_CheckValidChannel(uint16_t channel, bool checkScanList, uint8_t scanList)
 {
 	// return true if the channel appears valid
+	if (IS_RIGINFO(channel))
+		return true;
+		
 	if (!IS_MR_CHANNEL(channel))
 		return false;
 
-	const ChannelAttributes_t att = gMR_ChannelAttributes[channel];
+	//const ChannelAttributes_t att = gMR_ChannelAttributes[channel];
+	const ChannelAttributes_t att = MR_ChannelAttributes(channel);	
 
 	if (att.band > BAND7_470MHz)
 		return false;
@@ -167,7 +176,9 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 	else
 		channel = FREQ_CHANNEL_LAST - 1;
 
-	ChannelAttributes_t att = gMR_ChannelAttributes[channel];
+	//ChannelAttributes_t att = gMR_ChannelAttributes[channel];
+	ChannelAttributes_t att = MR_ChannelAttributes(channel);
+
 	if (att.__val == 0xFF) { // invalid/unused channel
 		if (IS_MR_CHANNEL(channel)) {
 			channel                    = gEeprom.FreqChannel[VFO];
@@ -231,10 +242,12 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 		pVfo->STEP_SETTING  = tmp;
 		pVfo->StepFrequency = gStepFrequencyTable[tmp];
 
+#ifdef ENABLE_SCRAMBLER
 		tmp = data[7];
 		if (tmp > (ARRAY_SIZE(gSubMenu_SCRAMBLER) - 1))
 			tmp = 0;
 		pVfo->SCRAMBLING_TYPE = tmp;
+#endif
 
 		pVfo->freq_config_RX.CodeType = (data[2] >> 0) & 0x0F;
 		pVfo->freq_config_TX.CodeType = (data[2] >> 4) & 0x0F;
@@ -296,7 +309,12 @@ void RADIO_ConfigureChannel(const unsigned int VFO, const unsigned int configure
 			pVfo->FrequencyReverse  = !!((d4 >> 0) & 1u);
 			pVfo->CHANNEL_BANDWIDTH = !!((d4 >> 1) & 1u);
 			pVfo->OUTPUT_POWER      =   ((d4 >> 2) & 3u);
+
+#ifdef ENABLE_BCL			
 			pVfo->BUSY_CHANNEL_LOCK = !!((d4 >> 4) & 1u);
+#else
+			pVfo->BUSY_CHANNEL_LOCK = false;
+#endif			
 		}
 
 		if (data[5] == 0xFF)
@@ -550,6 +568,10 @@ void RADIO_SetupRegisters(bool switchToForeground)
 {
 	BK4819_FilterBandwidth_t Bandwidth = gRxVfo->CHANNEL_BANDWIDTH;
 
+	//By KD8CEC	
+	if (gRxVfo->Modulation == MODULATION_CW || gRxVfo->Modulation == MODULATION_CWN)
+		Bandwidth = BK4819_FILTER_BW_CW;
+
 	AUDIO_AudioPathOff();
 
 	gEnableSpeaker = false;
@@ -561,13 +583,14 @@ void RADIO_SetupRegisters(bool switchToForeground)
 		default:
 			Bandwidth = BK4819_FILTER_BW_WIDE;
 			[[fallthrough]];
+		case BK4819_FILTER_BW_CW:
 		case BK4819_FILTER_BW_WIDE:
 		case BK4819_FILTER_BW_NARROW:
 			#ifdef ENABLE_AM_FIX
 //				BK4819_SetFilterBandwidth(Bandwidth, gRxVfo->Modulation == MODULATION_AM && gSetting_AM_fix);
-				BK4819_SetFilterBandwidth(Bandwidth, true);
+				BK4819_SetFilterBandwidth(Bandwidth, gRxVfo->Modulation, true);
 			#else
-				BK4819_SetFilterBandwidth(Bandwidth, false);
+				BK4819_SetFilterBandwidth(Bandwidth, gRxVfo->Modulation, false);
 			#endif
 			break;
 	}
@@ -601,7 +624,12 @@ void RADIO_SetupRegisters(bool switchToForeground)
 	#else
 		Frequency = gRxVfo->pRX->Frequency;
 	#endif
-	BK4819_SetFrequency(Frequency);
+
+	//for CW Mode Shift Frequency
+	//BK4819_SetFrequency(Frequency);
+	BK4819_SetFrequency(Frequency + GET_FREQ_OFFSET(gRxVfo->Modulation));
+	//ADDED BY KD8CEC
+	RADIO_SetModulation(gRxVfo->Modulation);
 
 	BK4819_SetupSquelch(
 		gRxVfo->SquelchOpenRSSIThresh,    gRxVfo->SquelchCloseRSSIThresh,
@@ -620,6 +648,18 @@ void RADIO_SetupRegisters(bool switchToForeground)
 		( 0u << 10)                 |     // AF Rx Gain-1
 		(gEeprom.VOLUME_GAIN << 4) |     // AF Rx Gain-2
 		(gEeprom.DAC_GAIN    << 0));     // AF DAC Gain (after Gain-1 and Gain-2)
+
+
+	//HACKING FIELD BY KD8CEC
+	if (CEC_SSB_FLT > 3 && gRxVfo->Modulation != MODULATION_FM && gRxVfo->Modulation != MODULATION_CWFM)
+	{
+		BK4819_WriteRegister(0x15, 32791);    // 32775 Max, 32839
+	}
+	else{
+		BK4819_WriteRegister(0x15, 32773);    //Default  Value
+	}
+	//END OF SSB FILTERED 
+
 
 
 	uint16_t InterruptMask = BK4819_REG_3F_SQUELCH_FOUND | BK4819_REG_3F_SQUELCH_LOST;
@@ -677,10 +717,11 @@ void RADIO_SetupRegisters(bool switchToForeground)
 						| BK4819_REG_3F_SQUELCH_LOST;
 					break;
 			}
-
+#ifdef ENABLE_SCRAMBLER
 			if (gRxVfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
 				BK4819_EnableScramble(gRxVfo->SCRAMBLING_TYPE - 1);
 			else
+#endif			
 				BK4819_DisableScramble();
 		}
 	}
@@ -796,6 +837,10 @@ void RADIO_SetTxParameters(void)
 {
 	BK4819_FilterBandwidth_t Bandwidth = gCurrentVfo->CHANNEL_BANDWIDTH;
 
+	//by KD8CEC
+	if (gCurrentVfo->Modulation == MODULATION_CW || gCurrentVfo->Modulation == MODULATION_CWN)
+		Bandwidth = BK4819_FILTER_BW_CW;
+
 	AUDIO_AudioPathOff();
 
 	gEnableSpeaker = false;
@@ -807,13 +852,14 @@ void RADIO_SetTxParameters(void)
 		default:
 			Bandwidth = BK4819_FILTER_BW_WIDE;
 			[[fallthrough]];
+		case BK4819_FILTER_BW_CW :
 		case BK4819_FILTER_BW_WIDE:
 		case BK4819_FILTER_BW_NARROW:
 			#ifdef ENABLE_AM_FIX
 //				BK4819_SetFilterBandwidth(Bandwidth, gCurrentVfo->Modulation == MODULATION_AM && gSetting_AM_fix);
-				BK4819_SetFilterBandwidth(Bandwidth, true);
+				BK4819_SetFilterBandwidth(Bandwidth, gRxVfo->Modulation, true);
 			#else
-				BK4819_SetFilterBandwidth(Bandwidth, false);
+				BK4819_SetFilterBandwidth(Bandwidth, gRxVfo->Modulation, false);
 			#endif
 			break;
 	}
@@ -860,13 +906,17 @@ void RADIO_SetModulation(ModulationMode_t modulation)
 	BK4819_AF_Type_t mod;
 	switch(modulation) {
 		default:
+		case MODULATION_CWFM:
 		case MODULATION_FM:
 			mod = BK4819_AF_FM;
 			break;
 		case MODULATION_AM:
 			mod = BK4819_AF_AM;
 			break;
-		case MODULATION_USB:
+
+		case MODULATION_CWN:
+		case MODULATION_CW:
+		case MODULATION_SSB:
 			mod = BK4819_AF_BASEBAND2;
 			break;
 
@@ -880,10 +930,28 @@ void RADIO_SetModulation(ModulationMode_t modulation)
 #endif
 	}
 
+	if (modulation == MODULATION_CW)
+	{
+		InitCWMode(MODULATION_CW);
+	}
+	else if (modulation == MODULATION_CWFM)
+	{
+		InitCWMode(CWMODE_CWFM);		
+	}
+	else if (modulation == MODULATION_CWN)
+	{
+		InitCWMode(CWMODE_CWN);		
+	}
+	else
+	{
+		InitCWMode(CWMODE_NONE);		
+	}
+
 	BK4819_SetAF(mod);
 
 	BK4819_SetRegValue(afDacGainRegSpec, 0xF);
-	BK4819_WriteRegister(BK4819_REG_3D, modulation == MODULATION_USB ? 0 : 0x2AAB);
+	//BK4819_WriteRegister(BK4819_REG_3D, modulation == MODULATION_SSB ? 0 : 0x2AAB);
+	BK4819_WriteRegister(BK4819_REG_3D, modulation == MODULATION_SSB  || modulation == MODULATION_CW   || modulation == MODULATION_CWN ? 0 : 0x2AAB);
 	BK4819_SetRegValue(afcDisableRegSpec, modulation != MODULATION_FM);
 
 	RADIO_SetupAGC(modulation == MODULATION_AM, false);
@@ -970,16 +1038,27 @@ void RADIO_PrepareTX(void)
 	} else if (SerialConfigInProgress()) {
 		// TX is disabled or config upload/download in progress
 		State = VFO_STATE_TX_DISABLE;
-	} else if (gCurrentVfo->BUSY_CHANNEL_LOCK && gCurrentFunction == FUNCTION_RECEIVE) {
+	} 
+
+#ifdef ENABLE_BCL 
+	else if (gCurrentVfo->BUSY_CHANNEL_LOCK && gCurrentFunction == FUNCTION_RECEIVE) 
+	{
 		// busy RX'ing a station
 		State = VFO_STATE_BUSY;
-	} else if (gBatteryDisplayLevel == 0) {
+	} 
+#endif	
+
+	else if (gBatteryDisplayLevel == 0) {
 		// charge your battery !git co
 		State = VFO_STATE_BAT_LOW;
-	} else if (gBatteryDisplayLevel > 6) {
+	} 
+#ifdef ENABLE_VOLT_HIGH_CHECK	
+	else if ( TXViaUART == 0 &&  gBatteryDisplayLevel > 6) 
+	{
 		// over voltage .. this is being a pain
 		State = VFO_STATE_VOLTAGE_HIGH;
 	}
+#endif	
 #ifndef ENABLE_TX_WHEN_AM
 	else if (gCurrentVfo->Modulation != MODULATION_FM) {
 		// not allowed to TX if in AM mode

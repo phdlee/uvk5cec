@@ -98,6 +98,7 @@ void DTMF_SendEndOfTransmission(void)
 
 		BK4819_EnterDTMF_TX(gEeprom.DTMF_SIDE_TONE);
 
+#ifdef ENABLE_UPDOWN_CODE
 		BK4819_PlayDTMFString(
 				gEeprom.DTMF_DOWN_CODE,
 				0,
@@ -105,7 +106,7 @@ void DTMF_SendEndOfTransmission(void)
 				gEeprom.DTMF_HASH_CODE_PERSIST_TIME,
 				gEeprom.DTMF_CODE_PERSIST_TIME,
 				gEeprom.DTMF_CODE_INTERVAL_TIME);
-
+#endif
 		AUDIO_AudioPathOff();
 		gEnableSpeaker = false;
 	}
@@ -469,8 +470,10 @@ void DTMF_Reply(void)
 				return;
 			}
 
+#ifdef ENABLE_UPDOWN_CODE
 			// send TX-UP DTMF
 			pString = gEeprom.DTMF_UP_CODE;
+#endif			
 			break;
 	}
 

@@ -146,9 +146,11 @@ void FUNCTION_Transmit()
 	DTMF_clear_RX();
 #endif
 
+#ifdef ENABLE_DTMF_RECEIVE
 	// clear the DTMF RX live decoder buffer
 	gDTMF_RX_live_timeout = 0;
 	memset(gDTMF_RX_live, 0, sizeof(gDTMF_RX_live));
+#endif	
 
 #if defined(ENABLE_FMRADIO)
 	if (gFmRadioMode)
@@ -214,9 +216,11 @@ void FUNCTION_Transmit()
 	}
 #endif
 
+#ifdef ENABLE_SCRAMBLER
 	if (gCurrentVfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
 		BK4819_EnableScramble(gCurrentVfo->SCRAMBLING_TYPE - 1);
 	else
+#endif		
 		BK4819_DisableScramble();
 
 	if (gSetting_backlight_on_tx_rx & BACKLIGHT_ON_TR_TX) {

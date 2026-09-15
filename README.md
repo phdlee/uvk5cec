@@ -1,78 +1,21 @@
-# Source code update (September 15, 2026)
+# CEC UV-K5 firmware source (updated September 15, 2026)
 
-The CEC UV-K5 firmware **source tree in this repository is open**.
+This repository now contains the **latest CEC mainline source** used for the 0.3 series.
 
-- Source was originally planned for a full open release at version 1.0.
-- Development paused before that milestone, so the source is confirmed open as of **September 15, 2026**.
-- Announcement: http://www.hamskey.com/2026/09/cec-uv-k5-firmware-source-is-now-open.html
-- Repository: https://github.com/phdlee/uvk5cec
-- Firmware binaries remain available under [Releases](https://github.com/phdlee/uvk5cec/releases).
+| Tree | Version string | Notes |
+|------|----------------|-------|
+| Repository root | `CEC_0.3V` | Main firmware (from local `uvk5cec_work_03X`, last developed ~June 2024). Build verified **2026-09-15**. |
+| [`hf-si4732/`](hf-si4732/) | `CEC_0.51HF` | Separate HF full-band receive line with **SI4732-A10** support. Build verified **2026-09-15**. |
 
-This is experimental firmware. Use it at your own risk and follow your local regulations.
+- Source-open announcement: http://www.hamskey.com/2026/09/cec-uv-k5-firmware-source-is-now-open.html
+- Releases (binaries): https://github.com/phdlee/uvk5cec/releases
+- Earlier note about waiting for version 1.0 is historical; source is open as of **September 15, 2026**.
+
+Experimental firmware — use at your own risk and follow local regulations.
+
+DE KD8CEC
 
 ---
-
-# Version 0.1HF (January 19, 2024) - (another version)
-Detailed explanations are provided in the link below.
-http://www.hamskey.com
-
-- Separate version released for UV-K5 modified with SI4732-A10
-- This version is different from the existing CEC version. To run this firmware as a testing version, be sure to remove BK1080 and replace it with SI4732-A10.
-- Remove all unnecessary functions other than the basic functions of the radio (to secure programming space)
-
-
-# Version 0.1P (January 13, 2024)
-- Improved variables that use excessive memory to secure program memory
-- Removal of the spectrum function (it is maintained in the source code. If you need it, you can select the activation option when distributing the source code later)
-- Added CW, CWF, CWN modes
-- Added CW-related settings
-The current version will be tested for 1-2 weeks and then redistributed as stable version 0.2. If you don't want to be a beta tester, you can download 0.2 in 1-2 weeks.
-
-
-# Version 0.1M (January 10, 2024)
-1. Add Text Configuration (Call sign, name, dx callsign, dx name, grid, CW Messages for builtin keyer)
-2. Add Some function to Text Editor
-3. Builtin SSTV Transmitter   (M1 Mode) (not need any device, stand alone)
-
-
-# Version 0.1c (January 5, 2024)
-This version fixes the parts that amateur radio operators found most inconvenient.
-1. Add Mhz button when entering frequency. If you want to move the frequency to 28.010, enter 28*010  (* button as Mhz button)
-2. Operating in Live mode when moving the frequency quickly (receiving while moving the frequency)
-3. Free up some memory for future tasks
-4. This version is a stable version and the source code was released together. Various experimental elements will be added from the next version, and as announced, the source code will be finalized and released upon the release of version 1.0.
-
-
-# Version 0.1b (January 2, 2024)
-I worked on the first firmware. I did what was requested by the user.
-Alternatively, functions that are not greatly needed in amateur radio were changed to those that are needed in amateur radio.
-1. I took the source code from https://github.com/egzumer/uv-k5-firmware-custom and created a new project.
-2. Change the environment so that it can be used in Visual Studio Code  (win_make.bat, makefile option ...)
-3. Remove some unnecessary variables for operation
-4. Changed the BCL function to be selectable at the compilation stage. (Because BCL is not often used in amateur radio), If you need the BCL function, just set the compilation options. (ENABLE_BCL  ?= 0)
-5. Changed all band TX activation from 10 times to once (this can also be operated in the old form in the makefile) (This is because you working in the Hiddel Menu anyway)
-6. The 350TX, 350EN, and 500TX functions have been changed to amateur radio bands. Even if TX 350 and TX 500 are ENABLE, they only operate under certain conditions. (Default Range Mode) , In countries where the TX function must be tested for radio use, TX on all frequencies must be within range. To receive permission for 900Mhz or 1.2Ghz, just enable TX900 and (TX126 OR TX127 - Each country has different licensed frequency bands. Just choose the band that suits you.)
-
-
-# Important notice about firmware  
-* The program will be modified starting today (January 2, 2024) based on egzummer's UV_K5 version.
-* Any parts that are added or removed from existing features will be specified above this part.
-* I plan to add quite a few features, and to secure flash memory space, I plan to remove visual elements that do not have a significant impact on radio performance. (ex : bargraph, icon, usb connected...)
-* The source will continue to be modified, and the compiled firmware will be released as a beta version.
-* **Update (September 15, 2026):** Source in this repository is open now (see the top of this README). Earlier notes about waiting for version 1.0 are historical.
-* See below for all features and descriptions prior to January 2, 2024. 
-
-I am always grateful to the UV-K5 firmware contributors for creating a new playground.
-DE KD8CE
-
-----------------------------------------------------------------------------------
-# The source was taken from the EGZUMER repository on January 2, 2024 
- * Please refer to the previous functions below.
- * This firmware contains various experimental elements. It will be distributed as a beta version before releasing the major version.
- * EGZUMMER's firmware for the stable version.
- * Once again, we would like to thank Dual Tachyon and egzummer for doing such great work and providing a playground for many developers.
------------------------------------------------------------------------------------
-
 
 # Open re-implementation of the Quansheng UV-K5/K6/5R v2.1.27 firmware
 

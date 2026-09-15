@@ -42,6 +42,7 @@
 #include "ui/menu.h"
 #include "ui/ui.h"
 #include "ceccommon.h"
+#include "cecsstv1.h"
 
 #ifndef ARRAY_SIZE
 	#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -78,6 +79,61 @@ uint8_t gUnlockAllTxConfCnt;
 		}
 	}
 #endif
+
+
+bool PttPressWithMenuItem(bool bKeyPressed, bool bKeyHeld, bool _runProcess)
+{
+	//if (UI_MENU_GetCurrentMenuId() == MENU_APRS_SEND || UI_MENU_GetCurrentMenuId() == MENU_SSTV || (UI_MENU_GetCurrentMenuId() == MENU_RIGINFO && edit_index == 0 ))
+	if (UI_MENU_GetCurrentMenuId() == MENU_APRS_SEND || UI_MENU_GetCurrentMenuId() == MENU_SSTV)
+	{	// currently editing the channel name
+		if (!bKeyHeld && bKeyPressed)
+		{
+			if (! _runProcess)
+			{
+				delay(1000);
+				_runProcess = (! GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT));
+			}
+			if (_runProcess)	//Check Long Press PTT
+			{
+				//return false;
+
+				//if (UI_MENU_GetCurrentMenuId() == MENU_APRS_SEND || (UI_MENU_GetCurrentMenuId() == MENU_RIGINFO && gSubMenuSelection == 7))
+				if (UI_MENU_GetCurrentMenuId() == MENU_APRS_SEND)
+				{
+					CEC_APRS_SEND(gSubMenuSelection);
+					/*
+					//62232
+					if (gSubMenuSelection == 0)	//STATUS
+						CEC_APRS_SEND(APRS_DATA_STATUS);	//STATUS
+					if (gSubMenuSelection == 1)	//MSG
+						CEC_APRS_SEND(APRS_DATA_MESSAGE);	//MESSAGE WITH DX CALLSIGN
+					else
+						CEC_APRS_SEND(APRS_DATA_FIXPOS);	//FIXED POSITION #define _FIXPOS         2						
+					*/
+				}
+				else
+				{
+
+					if (gSubMenuSelection == 2)	//LCD
+					{
+						SSTV_LCD_Start_Timer = 20;
+						UI_PrintString("Run after 10s", 1, 127, 4, 8);
+						ST7565_BlitFullScreen();
+						SYSTEM_DelayMs(2000);
+					}
+					else
+						StartSSTVM1(gSubMenuSelection);
+
+				}
+			}
+			
+		}
+		return true;
+	}
+	else
+		return false;
+
+}
 
 void MENU_StartCssScan(void)
 {
@@ -121,10 +177,71 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 	switch (menu_id)
 	{
 		//============= KD8CEC WORK ==================
+		//FOR VERSION 0.1C 
+#ifdef ENABLE_LIVE_SEEKMODE_MENU		
 		case MENU_LIVESEEK:
 			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_LIVESEEK) - 1;
 			break;
+#endif
+
+		//FOR VERSIN 0.1M
+		case MENU_RIGINFO:
+			*pMin = RIGINFO_FIRST;
+			*pMax = RIGINFO_LAST;
+			break;
+		
+		case MENU_SSTV:
+			//*pMin = 0;
+			*pMax = ARRAY_SIZE(gSubMenu_SSTV) - 1;
+			break;
+		case MENU_SSTV_PROTOCOL:
+			//*pMin = 0;
+			*pMax = ARRAY_SIZE(gSubMenu_SSTVPROTOCOL) - 1;
+			break;
+
+		//FOR VERSION 0.1P
+		case MENU_CWSPEED:
+			*pMin = 5;
+			*pMax = 50;
+			break;
+
+		case MENU_CWKEY : 
+			*pMax = ARRAY_SIZE(gSubMenu_CWKEY) - 1;
+			break;
+		
+		case MENU_CWTONE:	//ICOM, YAESU ABOUT MAX 1000Khz
+			*pMin = 30;
+			*pMax = 120;
+			break;
+
+		case MENU_CWTXDELAY:	// * 100 MILISEC 1 : 100ms, 10: 1s, 100 : 10s
+			*pMin = 5;
+			*pMax = 100;
+			break;
+
+		case MENU_CWADC_PAD1_START : 	//,	//uint16_t CWKKEY_DIT_AdcFrom  = 3390;  //[EEPROM]
+		case MENU_CWADC_PAD2_START :	//uint16_t CWKKEY_DAH_AdcFrom  = 3580;  //[EEPROM]
+		case MENU_CWADC_BOTH_START :	//uint16_t CWKKEY_BOTH_AdcFrom = 3680;  //[EEPROM]
+		case MENU_CWADC_BOTH_END   : 	//uint16_t CWKKEY_BOTH_AdcTo   = 3750;  //[EEPROM]
+			*pMax = 590;				// * 10 = 5700 
+			break;
+
+//*** VERSION 0.1X
+#ifdef MENU_SSB_FLT
+		case MENU_SSB_FLT:
+			//*pMin = 0;
+			*pMax = ARRAY_SIZE(gSubMenu_SSB_FLT) - 1;
+			break;
+#endif
+//*** VERSION 0.2B
+		case MENU_APRS_SEND:
+			*pMax = 3;	//ARRAY_SIZE(gSubMenu_APRS) - 1;
+			break;			
+
+		//case MENU_APRS_MYSSID:	//Move to MENUSTEP increase MYSSID BUT NOT INCREASE MEMORY
+		//case MENU_APRS_DIGISSID:	//Remove at 0.2G
+
 		//============= END OF KD8CEC WORK ===========
 		case MENU_SQL:
 			*pMax = 9;
@@ -135,6 +252,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = STEP_N_ELEM - 1;
 			break;
 
+		case MENU_APRS_MYSSID:
 		case MENU_ABR:
 			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_BACKLIGHT) - 1;
@@ -247,19 +365,37 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_S_ADD1:
 		case MENU_S_ADD2:
 		case MENU_STE:
+
+#ifdef ENABLE_DTMF_RECEIVE		
 		case MENU_D_ST:
+		case MENU_D_LIVE_DEC:
+#endif
+
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_DCD:
 #endif
-		case MENU_D_LIVE_DEC:
 		#ifdef ENABLE_NOAA
 			case MENU_NOAA_S:
 		#endif
+
+//KD8CEC ON/OFF MENU
+//*** VERSION 0.2B
+		case MENU_SSTV_SENDCW:
+
+		case MENU_WSPR_SEND:
+
+//*** VERSION 0.3P
+		case MENU_DIGITAL_MODE:
+
+//END OF KD8CEC ON/OFF MENU
+
 		case MENU_350TX:
 		case MENU_200TX:
 		case MENU_500TX:
 		case MENU_350EN:
 		case MENU_SCREN:
+
+
 			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_OFF_ON) - 1;
 			break;
@@ -269,10 +405,12 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = ARRAY_SIZE(gModulationStr) - 1;
 			break;
 
+#ifdef ENABLE_SCRAMBLER
 		case MENU_SCR:
 			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_SCRAMBLER) - 1;
 			break;
+#endif
 
 		case MENU_TOT:
 			//*pMin = 0;
@@ -294,7 +432,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			//*pMin = 0;
 			*pMax = MR_CHANNEL_LAST;
 			break;
-
+		
 		case MENU_SLIST1:
 		case MENU_SLIST2:
 			*pMin = -1;
@@ -327,10 +465,12 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = ARRAY_SIZE(gSubMenu_PTT_ID) - 1;
 			break;
 
+#ifdef ENABLE_BAT_TXT_MENU
 		case MENU_BAT_TXT:
 			//*pMin = 0;
 			*pMax = ARRAY_SIZE(gSubMenu_BAT_TXT) - 1;
 			break;
+#endif
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_HOLD:
@@ -338,10 +478,12 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 			*pMax = 60;
 			break;
 #endif
+#ifdef ENABLE_DTMF_RECEIVE
 		case MENU_D_PRE:
 			*pMin = 3;
 			*pMax = 99;
 			break;
+#endif	
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_LIST:
@@ -370,7 +512,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 		case MENU_F1LONG:
 		case MENU_F2SHRT:
 		case MENU_F2LONG:
-		case MENU_MLONG:
+		//case MENU_MLONG:
 			//*pMin = 0;
 			*pMax = gSubMenu_SIDEFUNCTIONS_size-1;
 			break;
@@ -404,6 +546,110 @@ void MENU_AcceptSetting(void)
 			gEeprom.SQUELCH_LEVEL = gSubMenuSelection;
 			gVfoConfigureMode     = VFO_CONFIGURE;
 			break;
+
+
+
+//========================= KD8CEC MENU ===================
+//VERSION 0.1C
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
+		case MENU_LIVESEEK:
+			CEC_LiveSeekMode = gSubMenuSelection;
+			break;
+#endif
+//VERSION 0.1M Move to VERSION 0.2B position
+/*
+		case MENU_SSTV:
+			if (gSubMenuSelection == 2)	//LCD
+			{
+				SSTV_LCD_Start_Timer = 20;
+				UI_PrintString("Run after 10s", 1, 127, 4, 8);
+				ST7565_BlitFullScreen();
+				SYSTEM_DelayMs(2000);
+			}
+			else
+				StartSSTVM1(gSubMenuSelection);
+			break;
+*/			
+
+//VERSION 0.1P
+		case MENU_CWSPEED:
+			CW_WPM = gSubMenuSelection;
+			break;
+
+		case MENU_CWKEY : 
+			CW_KeyType = gSubMenuSelection;
+			if (CW_Mode != CWMODE_NONE)
+			{
+				InitRX1Mode();
+			}
+			//Init CWMode
+			break;
+		
+		case MENU_CWTONE:	//ICOM, YAESU ABOUT MAX 1000Khz
+			CW_Tone = gSubMenuSelection;
+			//if current mode is cw or cwn then, chang frequency shift //ianlee
+			RADIO_SetupRegisters(false);
+			break;
+
+		case MENU_CWTXDELAY:	// * 100 MILISEC 1 : 100ms, 10: 1s, 100 : 10s
+			CW_TXDelay = gSubMenuSelection;
+			break;
+
+		case MENU_CWADC_PAD1_START : 	//,	//uint16_t CWKKEY_DIT_AdcFrom  = 3390;  //[EEPROM]
+			CW_ADC.CWKKEY_DIT_AdcFrom = gSubMenuSelection * 10;
+			break;
+		case MENU_CWADC_PAD2_START :	//uint16_t CWKKEY_DAH_AdcFrom  = 3580;  //[EEPROM]
+			CW_ADC.CWKKEY_DAH_AdcFrom = gSubMenuSelection * 10;
+			break;
+		case MENU_CWADC_BOTH_START :	//uint16_t CWKKEY_BOTH_AdcFrom = 3680;  //[EEPROM]
+			CW_ADC.CWKKEY_BOTH_AdcFrom = gSubMenuSelection * 10;
+			break;
+		case MENU_CWADC_BOTH_END   : 	//uint16_t CWKKEY_BOTH_AdcTo   = 3750;  //[EEPROM]
+			CW_ADC.CWKKEY_BOTH_AdcTo = gSubMenuSelection * 10;
+			break;
+
+	//version 0.1X
+#ifdef MENU_SSB_FLT	
+		case MENU_SSB_FLT:	//VFO, 6K, 1.7K, AND plus (internal vol and hacking register)
+			CEC_SSB_FLT = gSubMenuSelection;
+			//if current mode is cw or cwn then, chang frequency shift //ianlee
+			RADIO_SetupRegisters(false);
+			break;
+#endif
+
+		case MENU_SSTV_PROTOCOL:
+			SSTV_Protocol = gSubMenuSelection;
+			break;
+
+	//Version 0.2B
+		case MENU_SSTV_SENDCW:
+			SSTV_SendCW = gSubMenuSelection;
+			break;
+		case MENU_WSPR_SEND:
+			DigitalModeStart(2);
+			//CEC_SendWSPR();
+			break;
+
+
+		case MENU_APRS_SEND:
+		case MENU_SSTV:
+			PttPressWithMenuItem(true, false, true);
+			break;
+
+
+		case MENU_APRS_MYSSID:
+			aprs_MYSSID = gSubMenuSelection;
+			break;
+		//case MENU_APRS_DIGISSID:		//Remove at 0.2G
+		//	aprs_DIGISSID = gSubMenuSelection;
+		//	break;
+
+//*** VERSION 0.3P
+		case MENU_DIGITAL_MODE:
+			DigitalMode = gSubMenuSelection;
+			break;
+//=========================================== END OF KD8CEC MENU =
+
 
 		case MENU_STEP:
 			gTxVfo->STEP_SETTING = FREQUENCY_GetStepIdxFromSortedIdx(gSubMenuSelection);
@@ -477,7 +723,7 @@ void MENU_AcceptSetting(void)
 			gTxVfo->CHANNEL_BANDWIDTH = gSubMenuSelection;
 			gRequestSaveChannel       = 1;
 			return;
-
+#ifdef ENABLE_SCRAMBLER
 		case MENU_SCR:
 			gTxVfo->SCRAMBLING_TYPE = gSubMenuSelection;
 			#if 0
@@ -488,6 +734,7 @@ void MENU_AcceptSetting(void)
 			#endif
 			gRequestSaveChannel     = 1;
 			return;
+#endif
 
 #ifdef ENABLE_BCL
 		case MENU_BCL:
@@ -508,6 +755,7 @@ void MENU_AcceptSetting(void)
 			gFlagResetVfos      = true;
 			return;
 
+		case MENU_RIGINFO:
 		case MENU_MEM_NAME:
 			for (int i = 9; i >= 0; i--) {
 				if (edit[i] != ' ' && edit[i] != '_' && edit[i] != 0x00 && edit[i] != 0xff)
@@ -582,10 +830,6 @@ void MENU_AcceptSetting(void)
 			gEeprom.CHANNEL_DISPLAY_MODE = gSubMenuSelection;
 			break;
 
-		case MENU_LIVESEEK:
-			CEC_LiveSeekMode = gSubMenuSelection;
-			break;
-
 		case MENU_AUTOLK:
 			gEeprom.AUTO_KEYPAD_LOCK = gSubMenuSelection;
 			gKeyLockCountdown        = 30;
@@ -647,39 +891,13 @@ void MENU_AcceptSetting(void)
 				break;
 		#endif
 
+#ifdef ENABLE_DTMF_RECEIVE
 		case MENU_D_ST:
 			gEeprom.DTMF_SIDE_TONE = gSubMenuSelection;
 			break;
-
-#ifdef ENABLE_DTMF_CALLING
-		case MENU_D_RSP:
-			gEeprom.DTMF_DECODE_RESPONSE = gSubMenuSelection;
-			break;
-
-		case MENU_D_HOLD:
-			gEeprom.DTMF_auto_reset_time = gSubMenuSelection;
-			break;
-#endif
 		case MENU_D_PRE:
 			gEeprom.DTMF_PRELOAD_TIME = gSubMenuSelection * 10;
 			break;
-
-		case MENU_PTT_ID:
-			gTxVfo->DTMF_PTT_ID_TX_MODE = gSubMenuSelection;
-			gRequestSaveChannel         = 1;
-			return;
-
-		case MENU_BAT_TXT:
-			gSetting_battery_text = gSubMenuSelection;
-			break;
-
-#ifdef ENABLE_DTMF_CALLING
-		case MENU_D_DCD:
-			gTxVfo->DTMF_DECODING_ENABLE = gSubMenuSelection;
-			DTMF_clear_RX();
-			gRequestSaveChannel = 1;
-			return;
-#endif
 
 		case MENU_D_LIVE_DEC:
 			gSetting_live_DTMF_decoder = gSubMenuSelection;
@@ -690,6 +908,37 @@ void MENU_AcceptSetting(void)
 			gFlagReconfigureVfos     = true;
 			gUpdateStatus            = true;
 			break;
+
+#endif
+
+#ifdef ENABLE_DTMF_CALLING
+		case MENU_D_RSP:
+			gEeprom.DTMF_DECODE_RESPONSE = gSubMenuSelection;
+			break;
+
+		case MENU_D_HOLD:
+			gEeprom.DTMF_auto_reset_time = gSubMenuSelection;
+			break;
+#endif
+
+		case MENU_PTT_ID:
+			gTxVfo->DTMF_PTT_ID_TX_MODE = gSubMenuSelection;
+			gRequestSaveChannel         = 1;
+			return;
+#ifdef ENABLE_BAT_TXT_MENU
+		case MENU_BAT_TXT:
+			gSetting_battery_text = gSubMenuSelection;
+			break;
+#endif
+
+#ifdef ENABLE_DTMF_CALLING
+		case MENU_D_DCD:
+			gTxVfo->DTMF_DECODING_ENABLE = gSubMenuSelection;
+			DTMF_clear_RX();
+			gRequestSaveChannel = 1;
+			return;
+#endif
+
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_LIST:
@@ -718,11 +967,15 @@ void MENU_AcceptSetting(void)
 			return;
 
 		#ifdef ENABLE_AM_FIX
+
+#ifdef ENABLE_AMFIXED_MENU
 			case MENU_AM_FIX:
 				gSetting_AM_fix = gSubMenuSelection;
 				gVfoConfigureMode = VFO_CONFIGURE_RELOAD;
 				gFlagResetVfos    = true;
 				break;
+#endif
+
 		#endif
 
 		#ifdef ENABLE_NOAA
@@ -804,7 +1057,7 @@ void MENU_AcceptSetting(void)
 		case MENU_F1LONG:
 		case MENU_F2SHRT:
 		case MENU_F2LONG:
-		case MENU_MLONG:
+		//case MENU_MLONG:
 			{
 				uint8_t * fun[]= {
 					&gEeprom.KEY_1_SHORT_PRESS_ACTION,
@@ -844,6 +1097,90 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gEeprom.SQUELCH_LEVEL;
 			break;
 
+
+
+//================= KD8CEC MENU =================
+//VERSION 0.1C 
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
+		case MENU_LIVESEEK:
+			gSubMenuSelection = CEC_LiveSeekMode;
+			break;
+#endif
+//VERSION 0.1M, RIGINFO MENU => BELOW MENU_MEM_NM
+		case MENU_RIGINFO:
+			gSubMenuSelection = RIGINFO_FIRST;
+			break;
+
+		case MENU_SSTV:
+			gSubMenuSelection = 0;			
+			break;
+
+//VESION 0.1P
+		case MENU_CWSPEED:
+			gSubMenuSelection = CW_WPM;
+			break;
+
+		case MENU_CWKEY : 
+			gSubMenuSelection = CW_KeyType;
+			break;
+		
+		case MENU_CWTONE:	//ICOM, YAESU ABOUT MAX 1000Khz
+			gSubMenuSelection = CW_Tone;
+			break;
+
+		case MENU_CWTXDELAY:	// * 100 MILISEC 1 : 100ms, 10: 1s, 100 : 10s
+			gSubMenuSelection = CW_TXDelay;
+			break;
+
+		case MENU_CWADC_PAD1_START : 	//,	//uint16_t CWKKEY_DIT_AdcFrom  = 3390;  //[EEPROM]
+			gSubMenuSelection = CW_ADC.CWKKEY_DIT_AdcFrom / 10;
+			break;
+		case MENU_CWADC_PAD2_START :	//uint16_t CWKKEY_DAH_AdcFrom  = 3580;  //[EEPROM]
+			gSubMenuSelection = CW_ADC.CWKKEY_DAH_AdcFrom / 10;
+			break;
+		case MENU_CWADC_BOTH_START :	//uint16_t CWKKEY_BOTH_AdcFrom = 3680;  //[EEPROM]
+			gSubMenuSelection = CW_ADC.CWKKEY_BOTH_AdcFrom / 10;
+			break;
+		case MENU_CWADC_BOTH_END   : 	//uint16_t CWKKEY_BOTH_AdcTo   = 3750;  //[EEPROM]
+			gSubMenuSelection = CW_ADC.CWKKEY_BOTH_AdcTo / 10;
+			break;
+
+//VESION 0.1X
+#ifdef MENU_SSB_FLT
+		case MENU_SSB_FLT:
+			gSubMenuSelection = CEC_SSB_FLT;
+			break;
+#endif
+
+		case MENU_SSTV_PROTOCOL:
+			gSubMenuSelection = SSTV_Protocol;			
+			break;
+
+//VERSION 0.2B
+		case MENU_SSTV_SENDCW:
+			gSubMenuSelection = SSTV_SendCW;			
+			break;
+
+		case MENU_APRS_SEND:
+			gSubMenuSelection = 0;
+			break;
+		
+		case MENU_APRS_MYSSID:
+			gSubMenuSelection = aprs_MYSSID;
+			break;
+
+		//case MENU_APRS_DIGISSID:	//Remove at 0.2G
+		//	gSubMenuSelection = aprs_DIGISSID;
+		//	break;
+
+//*** VERSION 0.3P
+		case MENU_DIGITAL_MODE:
+			gSubMenuSelection = DigitalMode;
+			break;
+
+//=================END OF KD8CEC MENU ==============
+
+			
 		case MENU_STEP:
 			gSubMenuSelection = FREQUENCY_GetSortedIdxFromStepIdx(gTxVfo->STEP_SETTING);
 			break;
@@ -919,9 +1256,12 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gTxVfo->CHANNEL_BANDWIDTH;
 			break;
 
+#ifdef ENABLE_SCRAMBLER
 		case MENU_SCR:
 			gSubMenuSelection = gTxVfo->SCRAMBLING_TYPE;
 			break;
+#endif
+
 #ifdef ENABLE_BCL
 		case MENU_BCL:
 			gSubMenuSelection = gTxVfo->BUSY_CHANNEL_LOCK;
@@ -992,10 +1332,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gEeprom.CHANNEL_DISPLAY_MODE;
 			break;
 
-		case MENU_LIVESEEK:
-			gSubMenuSelection = CEC_LiveSeekMode;
-			break;
-
 		case MENU_AUTOLK:
 			gSubMenuSelection = gEeprom.AUTO_KEYPAD_LOCK;
 			break;
@@ -1051,11 +1387,18 @@ void MENU_ShowCurrentSetting(void)
 				gSubMenuSelection = gEeprom.ALARM_MODE;
 				break;
 		#endif
-
+#ifdef ENABLE_DTMF_RECEIVE
 		case MENU_D_ST:
 			gSubMenuSelection = gEeprom.DTMF_SIDE_TONE;
 			break;
+		case MENU_D_PRE:
+			gSubMenuSelection = gEeprom.DTMF_PRELOAD_TIME / 10;
+			break;
+		case MENU_D_LIVE_DEC:
+			gSubMenuSelection = gSetting_live_DTMF_decoder;
+			break;
 
+#endif	
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_RSP:
 			gSubMenuSelection = gEeprom.DTMF_DECODE_RESPONSE;
@@ -1065,17 +1408,15 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gEeprom.DTMF_auto_reset_time;
 			break;
 #endif
-		case MENU_D_PRE:
-			gSubMenuSelection = gEeprom.DTMF_PRELOAD_TIME / 10;
-			break;
 
 		case MENU_PTT_ID:
 			gSubMenuSelection = gTxVfo->DTMF_PTT_ID_TX_MODE;
 			break;
-
+#ifdef ENABLE_BAT_TXT_MENU
 		case MENU_BAT_TXT:
 			gSubMenuSelection = gSetting_battery_text;
 			return;
+#endif
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_DCD:
@@ -1086,9 +1427,6 @@ void MENU_ShowCurrentSetting(void)
 			gSubMenuSelection = gDTMF_chosen_contact + 1;
 			break;
 #endif
-		case MENU_D_LIVE_DEC:
-			gSubMenuSelection = gSetting_live_DTMF_decoder;
-			break;
 
 		case MENU_PONMSG:
 			gSubMenuSelection = gEeprom.POWER_ON_DISPLAY_MODE;
@@ -1103,9 +1441,12 @@ void MENU_ShowCurrentSetting(void)
 			break;
 
 #ifdef ENABLE_AM_FIX
+#ifdef ENABLE_AMFIXED_MENU
+
 		case MENU_AM_FIX:
 			gSubMenuSelection = gSetting_AM_fix;
 			break;
+#endif			
 #endif
 		#ifdef ENABLE_NOAA
 			case MENU_NOAA_S:
@@ -1163,7 +1504,7 @@ void MENU_ShowCurrentSetting(void)
 		case MENU_F1LONG:
 		case MENU_F2SHRT:
 		case MENU_F2LONG:
-		case MENU_MLONG:
+		//case MENU_MLONG:
 		{
 			uint8_t * fun[]= {
 				&gEeprom.KEY_1_SHORT_PRESS_ACTION,
@@ -1200,7 +1541,7 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 	gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 
-	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && edit_index >= 0)
+	if ((UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME || UI_MENU_GetCurrentMenuId() == MENU_RIGINFO)  && edit_index >= 0)
 	{	// currently editing the channel name
 
 		if (edit_index < 10)
@@ -1291,7 +1632,9 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_CH ||
 		UI_MENU_GetCurrentMenuId() == MENU_DEL_CH ||
 		UI_MENU_GetCurrentMenuId() == MENU_1_CALL ||
-		UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
+		UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME ||
+		UI_MENU_GetCurrentMenuId() == MENU_RIGINFO
+		)
 	{	// enter 3-digit channel number
 
 		if (gInputBoxIndex < 3)
@@ -1447,7 +1790,7 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 		return;
 	}
 
-	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
+	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME || UI_MENU_GetCurrentMenuId() == MENU_RIGINFO)
 	{
 		if (edit_index < 0)
 		{	// enter channel name edit mode
@@ -1552,9 +1895,18 @@ static void MENU_Key_STAR(const bool bKeyPressed, const bool bKeyHeld)
 
 	gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 
-	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && edit_index >= 0)
+	if ((UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME || UI_MENU_GetCurrentMenuId() == MENU_RIGINFO) && edit_index >= 0)
 	{	// currently editing the channel name
 
+		//Modified by KD8CEC
+		if (edit_index > 0)
+		{
+			//edit[edit_index] = '_';
+			--edit_index;
+			gRequestDisplayScreen = DISPLAY_MENU;
+		}
+
+		/*
 		if (edit_index < 10)
 		{
 			edit[edit_index] = '-';
@@ -1567,6 +1919,7 @@ static void MENU_Key_STAR(const bool bKeyPressed, const bool bKeyHeld)
 
 			gRequestDisplayScreen = DISPLAY_MENU;
 		}
+		*/
 
 		return;
 	}
@@ -1600,7 +1953,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 	uint8_t Channel;
 	bool    bCheckScanList;
 
-	if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && gIsInSubMenu && edit_index >= 0)
+	if ((UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME || UI_MENU_GetCurrentMenuId() == MENU_RIGINFO) && gIsInSubMenu && edit_index >= 0)
 	{	// change the character
 		if (bKeyPressed && edit_index < 10 && Direction != 0)
 		{
@@ -1681,6 +2034,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 		case MENU_DEL_CH:
 		case MENU_1_CALL:
 		case MENU_MEM_NAME:
+		case MENU_RIGINFO:
 			bCheckScanList = false;
 			break;
 
@@ -1697,7 +2051,19 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
 			return;
 	}
 
-	Channel = RADIO_FindNextChannel(gSubMenuSelection + Direction, Direction, bCheckScanList, VFO);
+
+	if (UI_MENU_GetCurrentMenuId() == MENU_RIGINFO)
+	{
+		Channel = gSubMenuSelection + Direction;
+		if (Channel > RIGINFO_LAST)
+			Channel = RIGINFO_FIRST;
+		else if (Channel < RIGINFO_FIRST)
+			Channel = RIGINFO_LAST;
+	}
+	else
+	{
+		Channel = RADIO_FindNextChannel(gSubMenuSelection + Direction, Direction, bCheckScanList, VFO);
+	}
 	if (Channel != 0xFF)
 		gSubMenuSelection = Channel;
 
@@ -1736,19 +2102,28 @@ void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			MENU_Key_STAR(bKeyPressed, bKeyHeld);
 			break;
 		case KEY_F:
-			if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && edit_index >= 0)
+			if ((UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME || UI_MENU_GetCurrentMenuId() == MENU_RIGINFO) && edit_index >= 0)
 			{	// currently editing the channel name
 				if (!bKeyHeld && bKeyPressed)
 				{
 					gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 					if (edit_index < 10)
 					{
+						//Modified by KD8CEC
+						if (edit[edit_index] == ' ')
+							edit[edit_index] = 'A';
+						else if (edit[edit_index] == 'A')
+							edit[edit_index] = '_';
+						else 
+							edit[edit_index] = ' ';						
+						/*
 						edit[edit_index] = ' ';
 						if (++edit_index >= 10)
 						{	// exit edit
 							gFlagAcceptSetting  = false;
 							gAskForConfirmation = 1;
 						}
+						*/
 						gRequestDisplayScreen = DISPLAY_MENU;
 					}
 				}
@@ -1758,7 +2133,8 @@ void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 			GENERIC_Key_F(bKeyPressed, bKeyHeld);
 			break;
 		case KEY_PTT:
-			GENERIC_Key_PTT(bKeyPressed);
+			if (! PttPressWithMenuItem(bKeyPressed, bKeyHeld, false))
+				GENERIC_Key_PTT(bKeyPressed);
 			break;
 		default:
 			if (!bKeyHeld && bKeyPressed)

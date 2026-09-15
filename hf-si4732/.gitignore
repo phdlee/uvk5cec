@@ -1,0 +1,11 @@
+*.d
+*.o
+firmware
+/firmware.packed.bin
+/firmware.bin
+/compiled-firmware
+.cache
+compile_commands.json
+.vscode
+/docs
+k5_eeprom.raw

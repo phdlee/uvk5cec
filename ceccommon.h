@@ -45,6 +45,11 @@
 #include "font.h"
 #include "functions.h"
 #include "app\app.h"
+#include "ui\helper.h"
+#include "driver\uart.h"
+#include "bsp\dp32g030\uart.h"
+#include "bsp\dp32g030\dma.h"
+#include "bsp\dp32g030\syscon.h"
 
 #define _MAX_READ_CH_ATTRIBUTES 7
 #define COMBUFF_USE_SEEK_RSSI   01
@@ -56,28 +61,166 @@
 #define CEC_EEPROM_START4       0x1F90   //0x1F90 ~ 0x1FFF  (96Byte)
 #define CEC_EEPROM_DATA1        0x0F5B   //5 0x0F5A ~ 0x0F5F (6Byte, but 0x0F5A is buffer with Channel Name) + (index * 16) index Count =  20, 5byte * 20 = 100byte
 #define CEC_EEPROM_DATA2        0x1E0A   //7 0x1E0A ~ 0x1E0A (7byte) + (index * 16) index Count = 12, 7byte * 12 = 84byte
+
+#define CEC_EEPROM_START1_SEC1   (CEC_EEPROM_START1 +  0) //OTHER CONFIGURATION
+#define CEC_EEPROM_CWADC         (CEC_EEPROM_START1 +  8) //CW ADC
+#define CEC_EEPROM_SSTVCONFIG    (CEC_EEPROM_START1 + 16) //SSTV
+#define CEC_EEPROM_START1_SEC2   (CEC_EEPROM_START1 + 24) //OTHER CONFIGURATION
+#define CEC_EEPROM_SPECTRUM      0x1D70 //SPECTRUM
+
 #define EEPROM_WELCOMESTRING1   0x0EB0    //16Byte
 #define EEPROM_WELCOMESTRING2   0x0EC0    //16Byte
+#define EEPROM_CHANNELNAME      0x0F50    //10byte  left 6 byte always set zero
 #define EEPROM_CONFIGSTART  
 #define CEC_EEPROM_CALLSIGN EEPROM_WELCOMESTRING1   //CALLSIGN SPACE GRID, ex)KD8CEC EM37, KD8CEC/TEST EM37
 #define CEC_EEPROM USERNAME EEPROM_WELCOMESTRING1   //NAME STATUS using APRS 
+#define CEC_EEPROM_CWQSODATA    0x1BE0    //TEMPDATA
+
+//1:SAVE DX CALL
+//2:CLEAR SCREEN
+//3:SAVE QSO STRING
+
+#define APRS_FREQ_CH1_MSG  168
+#define APRS_FREQ_CH2_GPS  169		
+
+/*
+	"MY CALL",
+	"MY NAME",
+	"MY GRID",
+	"GPS LAT",
+	"GPS LON",
+	"DX CALL",
+	"AprsDI1",
+	"AprsDI2",
+	"AprsMsg",
+	"SSTV M1",
+	"SSTV M2"
+*/
+
+//BY KD8CEC
+#define CEC_EEPROM_RIGINFO   0x2680    //RIGINFO EEPROM ADDRESS
+#define RIGINFO_MSG_MYCALL   (0  + RIGINFO_FIRST) //CHANNEL 170
+#define RIGINFO_MSG_MYNAME   (1  + RIGINFO_FIRST) //CHANNEL 171
+#define RIGINFO_MSG_MYGRID   (2  + RIGINFO_FIRST) //CHANNEL 172
+#define RIGINFO_MSG_GPSLAT   (3  + RIGINFO_FIRST) //CHANNEL 173
+#define RIGINFO_MSG_GPSLON   (4  + RIGINFO_FIRST) //CHANNEL 174
+#define RIGINFO_MSG_DXCALL   (5  + RIGINFO_FIRST) //CHANNEL 175 HOTKEY ON CW TXSTATUS
+#define RIGINFO_MSG_APRSDIG1 (6  + RIGINFO_FIRST) //CHANNEL 178
+#define RIGINFO_MSG_APRSDIG2 (7  + RIGINFO_FIRST) //CHANNEL 178
+#define RIGINFO_MSG_APRSMSG  (8  + RIGINFO_FIRST) //CHANNEL 177
+#define RIGINFO_MSG_SSTVMSG1 (9  + RIGINFO_FIRST) //CHANNEL 179
+#define RIGINFO_MSG_SSTVMSG2 (10 + RIGINFO_FIRST) //CHANNEL 180
+
+#define CEC_EEPROM_CWMSG0    (EEPROM_CHANNELNAME + RIGINFO_MSG_CWMSG0 * 16)    //CWMSG0
+#define RIGINFO_MSG_CWMSG0   (11 + RIGINFO_FIRST) //CHANNEL 181
+#define RIGINFO_MSG_CWMSG1   (12 + RIGINFO_FIRST) //CHANNEL 182
+#define RIGINFO_MSG_CWMSG2   (13 + RIGINFO_FIRST) //CHANNEL 183
+#define RIGINFO_MSG_CWMSG3   (14 + RIGINFO_FIRST) //CHANNEL 184
+#define RIGINFO_MSG_CWMSG4   (15 + RIGINFO_FIRST) //CHANNEL 185
+#define RIGINFO_MSG_CWMSG5   (16 + RIGINFO_FIRST) //CHANNEL 186
+#define RIGINFO_MSG_CWMSG6   (17 + RIGINFO_FIRST) //CHANNEL 187
+#define RIGINFO_MSG_CWMSG7   (18 + RIGINFO_FIRST) //CHANNEL 188
+#define RIGINFO_MSG_CWMSG8   (19 + RIGINFO_FIRST) //CHANNEL 189
+#define RIGINFO_MSG_CWMSG9   (20 + RIGINFO_FIRST) //CHANNEL 190
+
+#define CWMODE_NONE           0
+#define CWMODE_CWN            1
+#define CWMODE_CWFM           2
+#define CWMODE_CW             3
+#define CWMODE_CWAM           4
+
+
+#ifdef ENABLE_CEC_CWTX_EXPERT
+	#define CW_KEYTYPE_PADDLEA    0   //IAMBIC.A WITH 2 REGISTER
+	#define CW_KEYTYPE_PADDLEB    1   //IAMBIC.B WITH 2 REGISTER
+	#define CW_KEYTYPE_STRAIGHT   2   //EXTERAL STRAIHGT KEY WITH 1 REGISTER
+#else
+	#define CW_KEYTYPE_KEYPAD_PDL 0   //COMBINATION PTT AND MENU KEY
+	#define CW_KEYTYPE_KEYPAD_ST  1   //KEYPAD STRAIGHT PTT OR MENU KEY BUT TERRIBLE PERFORMANCE JUST TOY I CONCIDER FOR REMOVE THIS MENU
+	#define CW_KEYTYPE_PADDLE     2   //IAMBIC.A WITH 2 REGISTER
+	#define CW_KEYTYPE_STRAIGHT   3   //EXTERAL STRAIHGT KEY WITH 1 REGISTER
+//	#define CW_KEYTYPE_PC         4   //FOR USING PC PROGRAM AS FLDIGI
+#endif
 
 #define CW_LR_MODE + //ICOM STYLE, - : YAESU STYLE (uBITX : CWL, CWR)
-//extern ChannelAttributes_t gMR_ChannelAttributes[_MAX_READ_CH_ATTRIBUTES];
+#define GET_FREQ_OFFSET(__rxmode__) ( CW_LR_MODE (__rxmode__ == MODULATION_CW ||__rxmode__ == MODULATION_CWN ? ( CW_Tone ) : 0))
+
+
+#define BK4819_REG_40 0x40U
+#define BK4819_REG_40_SHIFT_ENABLE_DEVIATION 12
+#define BK4819_REG_40_SHIFT_TX_DEVIATION 0
+
+//============================= APRS
+#define APRS_DATA_STATUS        0
+#define APRS_DATA_MESSAGE       1
+#define APRS_DATA_MESSAGE_CWMSG 2
+#define APRS_DATA_FIXPOS        3
+#define APRS_DATA_FIXPOS_STATUS 4
+#define APRS_DATA_GPRMC         5
+#define APRS_DATA_BEACON        6
+#define APRS_DATA_FROM_UART     58	//58 : RS-232 DATA SEND (any)
+
+
+typedef uint8_t byte;
+struct ST_CW_ADC
+{
+  uint16_t CWKKEY_DIT_AdcFrom;
+  uint16_t CWKKEY_DAH_AdcFrom;
+  uint16_t CWKKEY_BOTH_AdcFrom;
+  uint16_t CWKKEY_BOTH_AdcTo;
+} __attribute__((packed));
+
+extern struct ST_CW_ADC CW_ADC;
+
+//For Reduce Memory, reading at use time
+extern ChannelAttributes_t gMR_ChannelAttributes[_MAX_READ_CH_ATTRIBUTES];
 extern uint8_t CommBuff[COMBUFF_LENGTH];  //for Common Use for 
 extern uint8_t CommBuffUsingType;
 extern uint32_t CommBuffLastUseTime;
 
-extern uint8_t CW_TONE;             //Hz Default 700Hz
+extern uint8_t lastSeekDirection;
+extern uint32_t rssiStartFreq;
+extern uint32_t addRssiCount;
+
+
+extern uint8_t CommValue1;             //temp varaible
+extern uint8_t CommValue2;
+extern uint8_t CommValue3;
+extern uint8_t strBuff[32];    //For sprintf
+
+
+extern uint8_t CW_Tone;   //Hz Default 700Hz
+extern uint8_t CW_Mode;     //0 : None, 1 : CWN, 2:CW-FM (MCW OR F2A), 3:CW (A1A), 4:MCW A2A
+extern uint8_t CW_SideTone; //1: Enabled,  0: Disabled
+extern uint8_t CW_KeyType;  //
+extern uint8_t CW_WPM;     //[EEPROM] 5~ 50 
+extern uint8_t CW_TXDelay;     //[EEPROM] * 100 milisecond
 extern uint8_t CW_SPEED;
-extern uint8_t CW_KEYTYPE;
+
 extern uint8_t CEC_LiveSeekMode;   //0:NONE, 1:LIVE, 2:LIVE+1, 3:LIVE+2
+extern uint8_t SSTV_LCD_Start_Timer;
+extern uint8_t CEC_SSB_FLT;
+extern uint8_t SSTV_Protocol;        //SSTV Protocol, 0 : MARTIN 1, 1 : SCOTTIE 1
+extern uint8_t SSTV_SendCW;           //SSTV Protocol, 0 : MARTIN 1, 1 : SCOTTIE 1
+extern uint8_t CECSWUart_LastError;
+
+//------------------------------------ APRS SSID --------------------------------------------
+extern uint8_t aprs_MYSSID;
+//extern uint8_t aprs_DIGISSID;  //Unused
+extern uint8_t DigitalMode;  //Realtime APRS CHECK
+extern uint8_t ScreenDelayTime;
+extern uint8_t ScreenLockMode;
+extern uint8_t TXViaUART;
+
 #define LIVESEEK_NONE           0   //NONE
 #define LIVESEEK_RCV            1   //SPEAKER ONLY
 #define LIVESEEK_RCV_SPECTRUM1  2   //SPECTRUM SMALL
 #define LIVESEEK_RCV_SPECTRUM2  3   //SPECTRUM LARGE (Not Use, Reserve)
 
-#define GET_FREQ_OFFSET(__rxmode__) ( CW_LR_MODE (__rxmode__ == MODULATION_CW ||__rxmode__ == MODULATION_CWN ? (CWTone) : 0))
+
+//-------------------------------- CEC DSP BOARD OR DIGITAL MODE -----------------------------
+//extern uint8_t IsFT8Mode;
+
 #define delay(delayTime) SYSTEM_DelayMs(delayTime)
 
 ChannelAttributes_t MR_ChannelAttributes(int _channelIndex);
@@ -86,4 +229,52 @@ void CEC_ApplyChangeRXFreq(int _applyOption);
 void CEC_TimeSlice500ms(void);
 void DrawCommBuffToSpectrum(void);
 uint32_t millis10();    //scheduler.c
+
+void UART_SendByte(uint8_t _sendByte);
+void UART_Init9600(void);
+void SetRX1Mode(int rx1Mode);
+void InitRX1Mode(void);
+void BackLightBlink(int _cnt);
+void CWDecodedChar(char _decodedChar, int decodeType, int _option1, int _option2);
+void PrepareSWFSKTX();
+void RestoreReceiveMode();
+void CEC_APRS_SEND(char _aprsDataType);
+//====================== TIMER
+#define CEC_TIMER_MSEC 0    //Mili Second Check
+#define CEC_TIMER_APRS 1    //1200bps time - 2~3 (process time)
+#define CEC_TIMER_FT8  2    //Mico Second
+
+//timer
+extern uint32_t timeIncVal;
+#define millis() timeIncVal
+void CECTimer0Enable(uint8_t timeerType);
+void CECTimer0Disable();
+void DigitalModeStart(uint8_t startMode);
+
+//APRS
+void CEC_GPSToAPRS(char * _gpsSTR, bool _isLat);
+
+//SPECTRUM
+void CEC_ReverseScreen(uint8_t * _srcBuff, int _buffSize);
+void CEC_DisplaySmallest(const char *pString, uint8_t x, uint8_t y, bool statusbar, bool fill);
+void CEC_Spectrum_WithWaterFall();
+
+uint16_t BK4819_ReadRegister_HS(BK4819_REGISTER_t Register);
+void BK4819_WriteRegister_HS(BK4819_REGISTER_t Register, uint16_t Data);
+uint8_t Rssi2PX2(uint16_t rssi, uint8_t pxMin, uint8_t pxMax);
+void DrawFrequencySmall(uint32_t _frequency, int _startX, int _Length, int _lineNumber);
+void CEC_ReceiveMode(bool _isReceive);
+void CEC_FMRadio(void);
+void CEC_WaitKeyRelease(void);
+void CEC_DisplayFreqSmallst(uint32_t _srcFreq, uint8_t _xPosition, uint8_t _yPosition);
+void CEC_DisplayValueSmallst(char * _dispStr, uint8_t _dispValue, uint8_t _xPosition, uint8_t _yPosition, bool _isStatus);
+
+int ProcessRemoteUI(void);
+int CEC_SendRemoteData(uint8_t _cmdType, uint8_t _cmdData1, uint8_t _cmdData2, uint8_t * _sndData, uint16_t _sendLength);
+int CEC_ReceiveRemoteCommand(void);
+
+void CEC_SendWSPR(void);
+uint8_t CECHWUartReadByte(int _timeoutCount);
+uint8_t IsUartEmpty();
+uint8_t ProcessRemoteControl(int _callType);
 #endif

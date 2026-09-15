@@ -74,9 +74,43 @@ static void DrawSmallAntennaAndBars(uint8_t *p, unsigned int level)
 		memset(p + 2 + i*3, bar, 2);
 	}
 }
-#if defined ENABLE_AUDIO_BAR || defined ENABLE_RSSI_BAR
 
-static void DrawLevelBar(uint8_t xpos, uint8_t line, uint8_t level)
+
+#if defined ENABLE_AUDIO_BAR || defined ENABLE_RSSI_BAR
+//Changed by KD8CEC
+void DrawLevelBar(uint8_t drawType, uint8_t line, uint8_t level, int16_t drawRssiDbm)
+{
+    uint8_t tmpBuff[20];
+	memset(gFrameBuffer[line], 0, 128);		//2Line
+	//sprintf(tmpBuff, "RSSI %2d@B;V", readRSSI);
+	sprintf(tmpBuff, "%d", drawRssiDbm);
+	CEC_DisplaySmallest(tmpBuff, 112,  26, false, true);	
+
+	//60496, 60508
+/*
+	if (level < 10 || drawType == 'A')
+		sprintf(tmpBuff, "%3c%-2u", drawType, level);
+	else
+		sprintf(tmpBuff, "+%-2u@B", (level - 9) * 10);
+*/
+	//CEC_DisplaySmallest(tmpBuff, 2,  26, false, true);	
+
+	for (int i = 0; i < 13; i++)
+		tmpBuff[i] = level > i ? '}' : '{';
+
+	tmpBuff[13] = 0x00;
+	UI_PrintStringSmallNormal(tmpBuff, 20, 0, line);
+
+	if (level < 10 || drawType == 'A')
+		sprintf(tmpBuff, "%c%-2u", drawType, level);
+	else
+		sprintf(tmpBuff, "+%-2u", (level - 9) * 10);
+
+	UI_PrintStringSmallNormal(tmpBuff, 0, 0, line);
+
+}
+
+static void DrawLevelBar_org(uint8_t xpos, uint8_t line, uint8_t level)
 {
 	const char hollowBar[] = {
 		0b01111111,
@@ -149,10 +183,11 @@ void UI_DisplayAudioBar(void)
 		const unsigned int sqrt_level = MIN(sqrt16(level), 124u);
 		uint8_t bars = 13 * sqrt_level / 124;
 
-		uint8_t *p_line = gFrameBuffer[line];
-		memset(p_line, 0, LCD_WIDTH);
+//		uint8_t *p_line = gFrameBuffer[line];
+//		memset(p_line, 0, LCD_WIDTH);
 
-		DrawLevelBar(62, line, bars);
+		//DrawLevelBar(62, line, bars);
+		DrawLevelBar('A', line, bars, gCurrentVfo->TXP_CalculatedSetting);	// 1: MIC
 
 		if (gCurrentFunction == FUNCTION_TRANSMIT)
 			ST7565_BlitFullScreen();
@@ -161,6 +196,10 @@ void UI_DisplayAudioBar(void)
 #endif
 
 
+//CHANGED BY KD8CEC FOR REDUCE PROGRAM MEMORY
+//56 Byte reduce with Bias voltage display
+
+/*
 void DisplayRSSIBar(const bool now)
 {
 #if defined(ENABLE_RSSI_BAR)
@@ -245,8 +284,77 @@ void DisplayRSSIBar(const bool now)
 	if (now)
 		ST7565_BlitFullScreen();
 #endif
-
 }
+*/
+
+
+void DisplayRSSIBar(const bool now)
+{
+#if defined(ENABLE_RSSI_BAR)
+
+	const unsigned int txt_width    = 7 * 8;                 // 8 text chars
+	const unsigned int bar_x        = 2 + txt_width + 4;     // X coord of bar graph
+
+	const unsigned int line         = 3;
+	uint8_t           *p_line        = gFrameBuffer[line];
+	char               str[16];
+
+
+	if ((gEeprom.KEY_LOCK && gKeypadLocked > 0) || center_line != CENTER_LINE_RSSI)
+		return;     // display is in use
+
+	if (gCurrentFunction == FUNCTION_TRANSMIT ||
+		gScreenToDisplay != DISPLAY_MAIN
+#ifdef ENABLE_DTMF_CALLING
+		|| gDTMF_CallState != DTMF_CALL_STATE_NONE
+#endif
+		)
+		return;     // display is in use
+
+	const int16_t s0_dBm   = -gEeprom.S0_LEVEL;                  // S0 .. base level
+	const int16_t rssi_dBm =
+		BK4819_GetRSSI_dBm()
+#ifdef ENABLE_AM_FIX
+		+ ((gSetting_AM_fix && gRxVfo->Modulation == MODULATION_AM) ? AM_fix_get_gain_diff() : 0)
+#endif
+		+ dBmCorrTable[gRxVfo->Band];
+
+	int s0_9 = gEeprom.S0_LEVEL - gEeprom.S9_LEVEL;
+	const uint8_t s_level = MIN(MAX((int32_t)(rssi_dBm - s0_dBm)*100 / (s0_9*100/9), 0), 9); // S0 - S9
+	uint8_t overS9dBm = MIN(MAX(rssi_dBm + gEeprom.S9_LEVEL, 0), 99);
+	uint8_t overS9Bars = MIN(overS9dBm/10, 4);
+
+	DrawLevelBar('S', line, s_level + overS9Bars, rssi_dBm);	//0: RSSI
+	if (now)
+		ST7565_BlitLine(line);
+
+#else
+	int16_t rssi = BK4819_GetRSSI();
+	uint8_t Level;
+
+	if (rssi >= gEEPROM_RSSI_CALIB[gRxVfo->Band][3]) {
+		Level = 6;
+	} else if (rssi >= gEEPROM_RSSI_CALIB[gRxVfo->Band][2]) {
+		Level = 4;
+	} else if (rssi >= gEEPROM_RSSI_CALIB[gRxVfo->Band][1]) {
+		Level = 2;
+	} else if (rssi >= gEEPROM_RSSI_CALIB[gRxVfo->Band][0]) {
+		Level = 1;
+	} else {
+		Level = 0;
+	}
+
+	uint8_t *pLine = (gEeprom.RX_VFO == 0)? gFrameBuffer[2] : gFrameBuffer[6];
+	if (now)
+		memset(pLine, 0, 23);
+	DrawSmallAntennaAndBars(pLine, Level);
+	if (now)
+		ST7565_BlitFullScreen();
+#endif
+}
+
+
+
 
 #ifdef ENABLE_AGC_SHOW_DATA
 void UI_MAIN_PrintAGC(bool now)
@@ -289,6 +397,9 @@ void UI_MAIN_PrintAGC(bool now)
 
 void UI_MAIN_TimeSlice500ms(void)
 {
+	if (ScreenDelayTime > 0)
+		return;
+
 	if(gScreenToDisplay==DISPLAY_MAIN) {
 #ifdef ENABLE_AGC_SHOW_DATA
 		UI_MAIN_PrintAGC(true);
@@ -306,6 +417,9 @@ void UI_MAIN_TimeSlice500ms(void)
 void UI_DisplayMain(void)
 {
 	char               String[22];
+
+	if (ScreenDelayTime > 0)
+		return;	
 
 	center_line = CENTER_LINE_NONE;
 
@@ -399,13 +513,26 @@ void UI_DisplayMain(void)
 
 			// highlight the selected/used VFO with a marker
 			if (isMainVFO)
+			{
 				memcpy(p_line0 + 0, BITMAP_VFO_Default, sizeof(BITMAP_VFO_Default));
+				//Modified by KD8CEC for Reduce program Memory, 60496 -> 60472  22byte
+				//CEC_ReverseScreen(p_line0 + 0, 20);
+				//memcpy(p_line0 + 0, BITMAP_VFO_Default, sizeof(BITMAP_VFO_Default));
+				//memcpy(p_line0 + 0, 0x3C, sizeof(BITMAP_VFO_Default));
+
+				//memset(p_line0 + 0, 0x3F, 15);
+			}
 		}
 		else // active TX VFO
 		{	// highlight the selected/used VFO with a marker
 			if (isMainVFO)
+				//memset(p_line1 + 15, 0x7F, 5);
+				//memset(p_line0 + 0, 0x3F, 15);
+				//CEC_ReverseScreen(p_line0 + 0, 20);
+				//CEC_ReverseScreen(p_line1 + 13, 7);
 				memcpy(p_line0 + 0, BITMAP_VFO_Default, sizeof(BITMAP_VFO_Default));
 			else
+				//memset(p_line0 + 0, 0x2A, 15);
 				memcpy(p_line0 + 0, BITMAP_VFO_NotDefault, sizeof(BITMAP_VFO_NotDefault));
 		}
 
@@ -421,21 +548,30 @@ void UI_DisplayMain(void)
 				if (activeTxVFO == vfo_num)
 				{	// show the TX symbol
 					mode = VFO_MODE_TX;
-					UI_PrintStringSmallBold("TX", 14, 0, line);
+
+					//Changed by KD8CEC for reduce Program Memory, remove Small Bold font  //61100 -> 60496 : reduce 604 byte
+					//UI_PrintStringSmallBold("TX", 14, 0, line);
+					CEC_DisplaySmallest("TX", 23, line * 8 + 1, false, true);
+					CEC_ReverseScreen(gFrameBuffer[line] + 21, 11);
+
 				}
 			}
 		}
 		else
 		{	// receiving .. show the RX symbol
 			mode = VFO_MODE_RX;
-			if (FUNCTION_IsRx() && gEeprom.RX_VFO == vfo_num) {
-				UI_PrintStringSmallBold("RX", 14, 0, line);
+			if (FUNCTION_IsRx() && gEeprom.RX_VFO == vfo_num) 
+			{
+				//Changed by KD8CEC for reduce Program Memory, remove Small Bold font  //61100 -> 60496 : reduce 604 byte
+				//UI_PrintStringSmallBold("RX", 14, 0, line);
+				CEC_DisplaySmallest("RX", 23, line * 8 + 1, false, true);
+				CEC_ReverseScreen(gFrameBuffer[line] + 21, 11);
 			}
 		}
 
 		if (IS_MR_CHANNEL(gEeprom.ScreenChannel[vfo_num]))
 		{	// channel mode
-			const unsigned int x = 2;
+			const unsigned int x = 0; //changed by kd8cec for align, 2 -> 0
 			const bool inputting = gInputBoxIndex != 0 && gEeprom.TX_VFO == vfo_num;
 			if (!inputting)
 				sprintf(String, "M%u", gEeprom.ScreenChannel[vfo_num] + 1);
@@ -446,7 +582,7 @@ void UI_DisplayMain(void)
 		else if (IS_FREQ_CHANNEL(gEeprom.ScreenChannel[vfo_num]))
 		{	// frequency mode
 			// show the frequency band number
-			const unsigned int x = 2;
+			const unsigned int x = 0;	//changed by kd8cec for align, 2 -> 0
 			char * buf = gEeprom.VfoInfo[vfo_num].pRX->Frequency < _1GHz_in_KHz ? "" : "+";
 			sprintf(String, "F%u%s", 1 + gEeprom.ScreenChannel[vfo_num] - FREQ_CHANNEL_FIRST, buf);
 			UI_PrintStringSmallNormal(String, x, 0, line + 1);
@@ -518,7 +654,8 @@ void UI_DisplayMain(void)
 			{	// it's a channel
 
 				// show the scan list assigment symbols
-				const ChannelAttributes_t att = gMR_ChannelAttributes[gEeprom.ScreenChannel[vfo_num]];
+				//const ChannelAttributes_t att = gMR_ChannelAttributes[gEeprom.ScreenChannel[vfo_num]];
+				const ChannelAttributes_t att = MR_ChannelAttributes(gEeprom.ScreenChannel[vfo_num]);
 				if (att.scanlist1)
 					memcpy(p_line0 + 113, BITMAP_ScanList1, sizeof(BITMAP_ScanList1));
 				if (att.scanlist2)
@@ -600,7 +737,8 @@ void UI_DisplayMain(void)
 				}
 
 				// show the channel symbols
-				const ChannelAttributes_t att = gMR_ChannelAttributes[gEeprom.ScreenChannel[vfo_num]];
+				//const ChannelAttributes_t att = gMR_ChannelAttributes[gEeprom.ScreenChannel[vfo_num]];
+				const ChannelAttributes_t att = MR_ChannelAttributes(gEeprom.ScreenChannel[vfo_num]);
 				if (att.compander)
 #ifdef ENABLE_BIG_FREQ
 					memcpy(p_line0 + 120, BITMAP_compand, sizeof(BITMAP_compand));
@@ -649,7 +787,7 @@ void UI_DisplayMain(void)
 			case MODULATION_FM: {
 				const FREQ_Config_t *pConfig = (mode == VFO_MODE_TX) ? vfoInfo->pTX : vfoInfo->pRX;
 				const unsigned int code_type = pConfig->CodeType;
-				const char *code_list[] = {"", "CT", "DCS", "DCR"};
+				const char *code_list[] = {"FM", "CT", "DCS", "DCR"};
 				if (code_type < ARRAY_SIZE(code_list))
 					s = code_list[code_type];
 				break;
@@ -687,9 +825,12 @@ void UI_DisplayMain(void)
 			UI_PrintStringSmallNormal("DTMF", LCD_WIDTH + 78, 0, line + 1);
 #endif
 
+#ifdef ENABLE_SCRAMBLER
 		// show the audio scramble symbol
 		if (vfoInfo->SCRAMBLING_TYPE > 0 && gSetting_ScrambleEnable)
 			UI_PrintStringSmallNormal("SCR", LCD_WIDTH + 106, 0, line + 1);
+#endif
+
 	}
 
 #ifdef ENABLE_AGC_SHOW_DATA
@@ -737,6 +878,8 @@ void UI_DisplayMain(void)
 		if (rx || gCurrentFunction == FUNCTION_FOREGROUND || gCurrentFunction == FUNCTION_POWER_SAVE)
 		{
 			#if 1
+
+#ifdef ENABLE_DTMF_RECEIVE			
 				if (gSetting_live_DTMF_decoder && gDTMF_RX_live[0] != 0)
 				{	// show live DTMF decode
 					const unsigned int len = strlen(gDTMF_RX_live);
@@ -754,6 +897,7 @@ void UI_DisplayMain(void)
 					sprintf(String, "DTMF %s", gDTMF_RX_live + idx);
 					UI_PrintStringSmallNormal(String, 2, 0, 3);
 				}
+#endif				
 			#else
 				if (gSetting_live_DTMF_decoder && gDTMF_RX_index > 0)
 				{	// show live DTMF decode

@@ -27,6 +27,7 @@
 #include "gpio.h"
 #include "system.h"
 #include "systick.h"
+#include "ceccommon.h"
 
 
 #ifndef ARRAY_SIZE
@@ -558,6 +559,7 @@ void BK4819_EnableVox(uint16_t VoxEnableThreshold, uint16_t VoxDisableThreshold)
 	BK4819_WriteRegister(BK4819_REG_31, REG_31_Value | (1u << 2));    // VOX Enable
 }
 
+/*
 void BK4819_SetFilterBandwidth(const BK4819_FilterBandwidth_t Bandwidth, const bool weak_no_different)
 {
 	// REG_43
@@ -658,6 +660,159 @@ void BK4819_SetFilterBandwidth(const BK4819_FilterBandwidth_t Bandwidth, const b
 				val |= (0u <<  9);     //  0 RF filter bandwidth when signal is weak
 			}
 			break;
+
+		//BY KD8CEC, CW MODE USING NARROW FILTER, BUT YET WIDE FOR CW
+		case BK4819_FILTER_BW_CW:	// 6.25kHz
+			val = (0u << 12) |     //  1.7kHz RF filter bandwidth
+				  (0u <<  9) |     //  1.7Khz (same weak)
+				  (1u <<  6) |     //  1 AFTxLPF2 filter Band Width
+				  (1u <<  4) |     //  1 BW Mode Selection (6.25)
+				  (1u <<  3) |     //  1
+				  (0u <<  2);      //  0 Gain after FM Demodulation
+			break;
+	}
+
+	BK4819_WriteRegister(BK4819_REG_43, val);
+}
+*/
+
+
+void BK4819_SetFilterBandwidth(const BK4819_FilterBandwidth_t Bandwidth, const uint8_t _modulation, const bool weak_no_different)
+{
+	// REG_43
+	// <15>    0 ???
+	//
+	// <14:12> 4 RF filter bandwidth
+	//         0 = 1.7  kHz
+	//         1 = 2.0  kHz
+	//         2 = 2.5  kHz
+	//         3 = 3.0  kHz
+	//         4 = 3.75 kHz
+	//         5 = 4.0  kHz
+	//         6 = 4.25 kHz
+	//         7 = 4.5  kHz
+	// if <5> == 1, RF filter bandwidth * 2
+	//
+	// <11:9>  0 RF filter bandwidth when signal is weak
+	//         0 = 1.7  kHz
+	//         1 = 2.0  kHz
+	//         2 = 2.5  kHz
+	//         3 = 3.0  kHz
+	//         4 = 3.75 kHz
+	//         5 = 4.0  kHz
+	//         6 = 4.25 kHz
+	//         7 = 4.5  kHz
+	// if <5> == 1, RF filter bandwidth * 2
+	//
+	// <8:6>   1 AFTxLPF2 filter Band Width
+	//         1 = 2.5  kHz (for 12.5k channel space)
+	//         2 = 2.75 kHz
+	//         0 = 3.0  kHz (for 25k   channel space)
+	//         3 = 3.5  kHz
+	//         4 = 4.5  kHz
+	//         5 = 4.25 kHz
+	//         6 = 4.0  kHz
+	//         7 = 3.75 kHz
+	//
+	// <5:4>   0 BW Mode Selection
+	//         0 = 12.5k
+	//         1 =  6.25k
+	//         2 = 25k/20k
+	//
+	// <3>     1 ???
+	//
+	// <2>     0 Gain after FM Demodulation
+	//         0 = 0dB
+	//         1 = 6dB
+	//
+	// <1:0>   0 ???
+
+	uint16_t val = 0;
+	switch (Bandwidth)
+	{
+		default:
+		case BK4819_FILTER_BW_WIDE:	// 25kHz
+			val = (4u << 12) |     // *3 RF filter bandwidth
+				  (6u <<  6) |     // *0 AFTxLPF2 filter Band Width
+				  (2u <<  4) |     //  2 BW Mode Selection
+				  (1u <<  3) |     //  1
+				  (0u <<  2);     //  0 Gain after FM Demodulation
+
+			if (weak_no_different) {
+				// make the RX bandwidth the same with weak signals
+				val |= (4u <<  9);     // *0 RF filter bandwidth when signal is weak
+			} else {
+				/// with weak RX signals the RX bandwidth is reduced
+				val |= (2u <<  9);     // *0 RF filter bandwidth when signal is weak
+			}
+
+			break;
+
+		case BK4819_FILTER_BW_NARROW:	// 12.5kHz
+			val = (4u << 12) |     // *4 RF filter bandwidth
+				  (0u <<  6) |     // *1 AFTxLPF2 filter Band Width
+				  (0u <<  4) |     //  0 BW Mode Selection
+				  (1u <<  3) |     //  1
+				  (0u <<  2);      //  0 Gain after FM Demodulation
+
+			if (weak_no_different) {
+				val |= (4u <<  9);     // *0 RF filter bandwidth when signal is weak
+			} else {
+				val |= (2u <<  9);
+			}
+
+			break;
+
+		case BK4819_FILTER_BW_NARROWER:	// 6.25kHz
+			val = (3u << 12) |     //  3 RF filter bandwidth
+				  (3u <<  9) |     // *0 RF filter bandwidth when signal is weak
+				  (1u <<  6) |     //  1 AFTxLPF2 filter Band Width
+				  (1u <<  4) |     //  1 BW Mode Selection
+				  (1u <<  3) |     //  1
+				  (0u <<  2);      //  0 Gain after FM Demodulation
+
+			if (weak_no_different) {
+				val |= (3u <<  9);
+			} else {
+				val |= (0u <<  9);     //  0 RF filter bandwidth when signal is weak
+			}
+			break;
+/*
+		//BY KD8CEC, CW MODE USING NARROW FILTER, BUT YET WIDE FOR CW
+		case BK4819_FILTER_BW_CW:	// 6.25kHz
+			val = (0u << 12) |     //  1.7kHz RF filter bandwidth
+				  (0u <<  9) |     //  1.7Khz (same weak)
+				  (1u <<  6) |     //  1 AFTxLPF2 filter Band Width
+				  (1u <<  4) |     //  1 BW Mode Selection (6.25)
+				  (1u <<  3) |     //  1
+				  (0u <<  2);      //  0 Gain after FM Demodulation
+			break;
+*/			
+	}
+
+	if (_modulation == MODULATION_CW || _modulation == MODULATION_CWN)
+	{
+			val = (0u << 12) |     //  1.7kHz RF filter bandwidth
+				  (0u <<  9) |     //  1.7Khz (same weak)
+				  (1u <<  6) |     //  1 AFTxLPF2 filter Band Width
+				  (1u <<  4) |     //  1 BW Mode Selection (6.25)
+				  (1u <<  3) |     //  1
+				  (0u <<  2);      //  0 Gain after FM Demodulation
+	}
+	else if (_modulation == MODULATION_SSB && CEC_SSB_FLT > 0)	//Not using VFO Bandwidth
+	{
+		uint8_t tmpRFFilter = 3u;	//011 3khz (default : 1 3k, 4: 3k+)
+		if (CEC_SSB_FLT == 2 || CEC_SSB_FLT == 5)	//2K, 2K+
+			tmpRFFilter = 1u;	//2kHz
+		else if (CEC_SSB_FLT == 3 || CEC_SSB_FLT == 6)	//1.7K, 1.7K+
+			tmpRFFilter = 0u;	//1.7kHz
+
+			val = (tmpRFFilter << 12) |     // FILTER
+				  (tmpRFFilter <<  9) |     //  1.7Khz (same weak)
+				  (1u <<  6) |     //  1 AFTxLPF2 filter Band Width (not usable, aft not effect ssb and cw and am)
+				  (1u <<  4) |     //  1 BW Mode Selection (6.25)
+				  (1u <<  3) |     //  1
+				  (0u <<  2);      //  0 Gain after FM Demodulation
 	}
 
 	BK4819_WriteRegister(BK4819_REG_43, val);

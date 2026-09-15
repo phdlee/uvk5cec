@@ -20,9 +20,16 @@
 
 #include <stdint.h>
 
+
+#define UART_BAUD_9600_CLOCK_DIV  9763U
+#define UART_BAUD_38400_CLOCK_DIV 39053U
+#define UART_BAUD_57600_CLOCK_DIV 58580U
+#define UART_BAUD_1152K_CLOCK_DIV 117159U
+
+
 extern uint8_t UART_DMA_Buffer[256];
 
-void UART_Init(void);
+void UART_Init(uint32_t _BaudClockDiv);
 void UART_Send(const void *pBuffer, uint32_t Size);
 void UART_LogSend(const void *pBuffer, uint32_t Size);
 

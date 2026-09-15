@@ -75,8 +75,10 @@ extern uint8_t           gDTMF_InputBox_Index;
 extern bool              gDTMF_InputMode;
 extern uint8_t           gDTMF_PreviousIndex;
 
+#ifdef ENABLE_DTMF_RECEIVE
 extern char              gDTMF_RX_live[20];
 extern uint8_t           gDTMF_RX_live_timeout;
+#endif
 
 extern DTMF_ReplyState_t gDTMF_ReplyState;
 

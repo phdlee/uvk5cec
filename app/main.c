@@ -89,8 +89,10 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 	switch (Key)
 	{
 		case KEY_0:
+			//Changed FM Radio for reduce program memory , goal is 1/3 using program memory
+			CEC_FMRadio();
 			#ifdef ENABLE_FMRADIO
-				ACTION_FM();
+			//	ACTION_FM();
 			#else
 
 
@@ -203,6 +205,8 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 			break;
 
 		case KEY_5:
+			CEC_Spectrum_WithWaterFall();
+			break;
 			if(beep) {
 #ifdef ENABLE_NOAA
 
@@ -237,6 +241,7 @@ static void processFKeyFunction(const KEY_Code_t Key, const bool beep)
 			break;
 
 		case KEY_7:
+			//CEC_Spectrum_WithWaterFall();
 #ifdef ENABLE_VOX
 			ACTION_Vox();
 #else
@@ -543,6 +548,7 @@ static void MAIN_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 
 			if (gScreenToDisplay == DISPLAY_MAIN)
 			{
+				/*
 				if (gInputBoxIndex > 0)
 				{	// delete any inputted chars
 					gInputBoxIndex        = 0;
@@ -553,6 +559,12 @@ static void MAIN_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
 				gUpdateStatus   = true;
 
 				ACTION_Handle(KEY_MENU, bKeyPressed, bKeyHeld);
+				*/
+				//CEC_Spectrum_WithWaterFall();
+				DigitalModeStart(0);	//WSPR MODE (Stand alone) 0:FT8, 1 : FT4, 2: WSPR
+				//DigitalModeStart(1);	//WSPR MODE (Stand alone) 0:FT8, 1 : FT4, 2: WSPR
+				//DigitalModeStart(2);	//WSPR MODE (Stand alone) 0:FT8, 1 : FT4, 2: WSPR
+				//DigitalModeStart(3);	//WSPR MODE (Stand alone) 0:FT8, 1 : FT4, 2: WSPR
 			}
 		}
 
@@ -591,7 +603,7 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
 	
 	if (gInputBoxIndex)
 	{
-// KD8CEC: treat * as MHz separator while entering frequency
+//KD8CEC. ianlee 
         if (!bKeyHeld && bKeyPressed)
         {
             gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
@@ -619,7 +631,7 @@ static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)
                 gKeyInputCountdown = key_input_timeout_500ms;
             }           
         }
-        // end of KD8CEC easy frequency input
+        //end of ianlee for easy input frequency		
 		return;
 	}
 
@@ -817,6 +829,19 @@ void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 //	{
 //		Key = KEY_SIDE2;      // what's this doing ???
 //	}
+
+	if (DigitalMode && ScreenDelayTime > 0)
+	{
+		if (Key == KEY_EXIT)
+			ScreenDelayTime = 0;
+		else
+		{
+			//COMMAND SEND
+			CEC_SendRemoteData(0x21, 200 + Key, ((bKeyPressed << 1) | bKeyHeld), 0, 0);		
+			ScreenDelayTime = 250;
+		}
+		return;
+	}
 
 	switch (Key)
 	{

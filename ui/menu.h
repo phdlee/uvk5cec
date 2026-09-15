@@ -42,13 +42,55 @@ enum
 	MENU_OFFSET,
 	MENU_TOT,
 	MENU_W_N,
+	#ifdef ENABLE_SCRAMBLER
 	MENU_SCR,
+	#endif
+
+#ifdef ENABLE_BCL	
 	MENU_BCL,
+#endif
+
 	MENU_MEM_CH,
 	MENU_DEL_CH,
 	MENU_MEM_NAME,
-	MENU_MDF,
+	//==============  KD8CEC MENU
+	//FOR VERSION 0.1C
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
 	MENU_LIVESEEK,
+#endif
+	//FOR VERSION 0.1M
+	MENU_RIGINFO,
+	MENU_SSTV,
+
+	//FOR VERSION 1.0P
+	MENU_CWSPEED,			//uint8_t CW_WPM        = 17;     //[EEPROM] 5~ 50 
+	MENU_CWKEY,				//uint8_t CW_KeyType    = CW_KEYTYPE_PADDLE;  //[EEPROM]
+	MENU_CWTXDELAY,			//uint8_t CW_TXDelay    = 20;     //[EEPROM] * 100 milisecond
+	MENU_CWTONE,			//uint8_t CW_Tone       = 70;     //[EEPROM] *10 Hz, because BK4819 inc/dec 10Hz, 
+	MENU_CWADC_PAD1_START,	//uint16_t CWKKEY_DIT_AdcFrom  = 3390;  //[EEPROM]
+	MENU_CWADC_PAD2_START,	//uint16_t CWKKEY_DAH_AdcFrom  = 3580;  //[EEPROM]
+	MENU_CWADC_BOTH_START,	//uint16_t CWKKEY_BOTH_AdcFrom = 3680;  //[EEPROM]
+	MENU_CWADC_BOTH_END,	//uint16_t CWKKEY_BOTH_AdcTo   = 3750;  //[EEPROM]
+
+	//FOR VERSION 1.0X
+#ifdef MENU_SSB_FLT	
+	MENU_SSB_FLT,
+#endif	
+	MENU_SSTV_PROTOCOL,
+
+	//VERSION 0.2B
+
+	MENU_APRS_SEND,
+	MENU_APRS_MYSSID,
+	//MENU_APRS_DIGISSID,	//Remove at 0.2G
+	MENU_SSTV_SENDCW,
+
+	//VERSION 0.3
+	MENU_WSPR_SEND,
+	MENU_DIGITAL_MODE,
+	//============= END OF KD8CEC MENU
+
+	MENU_MDF,
 	MENU_SAVE,
 #ifdef ENABLE_VOX
 	MENU_VOX,
@@ -83,24 +125,39 @@ enum
 #ifdef ENABLE_DTMF_CALLING
 	MENU_ANI_ID,
 #endif
+
+#ifdef ENABLE_UPDOWN_CODE
 	MENU_UPCODE,
 	MENU_DWCODE,
+#endif
+
 	MENU_PTT_ID,
+#ifdef ENABLE_DTMF_RECEIVE	
 	MENU_D_ST,
+#endif
+
 #ifdef ENABLE_DTMF_CALLING
 	MENU_D_RSP,
 	MENU_D_HOLD,
 #endif
+#ifdef ENABLE_DTMF_RECEIVE	
 	MENU_D_PRE,
+#endif	
 #ifdef ENABLE_DTMF_CALLING	
 	MENU_D_DCD,
 	MENU_D_LIST,
 #endif
+
+#ifdef ENABLE_DTMF_RECEIVE	
 	MENU_D_LIVE_DEC,
+#endif	
 	MENU_PONMSG,
 	MENU_ROGER,
 	MENU_VOL,
+
+#ifdef ENABLE_BAT_TXT_MENU	
 	MENU_BAT_TXT,
+#endif	
 	MENU_AM,
 #ifdef ENABLE_AM_FIX
 	MENU_AM_FIX,
@@ -123,7 +180,7 @@ enum
 	MENU_F1LONG,
 	MENU_F2SHRT,
 	MENU_F2LONG,
-	MENU_MLONG,
+//	MENU_MLONG,
 	MENU_BATTYP
 };
 
@@ -150,7 +207,9 @@ extern const char* const gSubMenu_MDF[4];
 extern const char        gSubMenu_D_RSP[4][11];
 #endif
 
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
 extern const char gSubMenu_LIVESEEK[3][6];
+#endif
 
 extern const char* const gSubMenu_PTT_ID[5];
 extern const char        gSubMenu_PONMSG[4][8];
@@ -159,9 +218,31 @@ extern const char        gSubMenu_RESET[2][4];
 extern const char* const gSubMenu_F_LOCK[F_LOCK_LEN];
 extern const char        gSubMenu_BACKLIGHT[8][7];
 extern const char        gSubMenu_RX_TX[4][6];
+#ifdef ENABLE_BAT_TXT_MENU
 extern const char        gSubMenu_BAT_TXT[3][8];
+#endif
 extern const char 		 gSubMenu_BATTYP[2][9];
+
+#ifdef ENABLE_SCRAMBLER
 extern const char        gSubMenu_SCRAMBLER[11][7];
+#endif
+
+//KD8CEC
+extern const char 		 gSubMenu_SSTV[3][4];
+extern const char 		gSubMenu_SSTVPROTOCOL[2][4];
+extern const char		 gSubMenu_RIGINFO[11][8];
+
+#ifdef ENABLE_CEC_CWTX_EXPERT
+extern const char		 gSubMenu_CWKEY[3][5];
+#else
+extern const char		 gSubMenu_CWKEY[4][5];
+#endif
+
+#ifdef MENU_SSB_FLT
+extern const char 		 gSubMenu_SSB_FLT[7][5];
+#endif
+
+extern const char 		gSubMenu_APRS[4][4];
 
 typedef struct {char* name; uint8_t id;} t_sidefunction;
 extern const uint8_t 		 gSubMenu_SIDEFUNCTIONS_size;

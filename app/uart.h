@@ -21,6 +21,6 @@
 
 bool UART_IsCommandAvailable(void);
 void UART_HandleCommand(void);
-
+uint8_t CECHWUartClearBuffer(void);
 #endif
 

@@ -180,8 +180,11 @@ void ACTION_Scan(bool bRestart)
 #ifdef ENABLE_DTMF_CALLING
 	DTMF_clear_RX();
 #endif
+
+#ifdef ENABLE_DTMF_RECEIVE
 	gDTMF_RX_live_timeout = 0;
 	memset(gDTMF_RX_live, 0, sizeof(gDTMF_RX_live));
+#endif	
 
 	RADIO_SelectVfos();
 
@@ -239,6 +242,8 @@ void ACTION_SwitchDemodul(void)
 
 	if(gTxVfo->Modulation == MODULATION_UKNOWN)
 		gTxVfo->Modulation = MODULATION_FM;
+
+	RADIO_SetupRegisters(true);		//BY KD8CEC
 }
 
 

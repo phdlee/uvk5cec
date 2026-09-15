@@ -1296,7 +1296,7 @@ void APP_RunSpectrum() {
   ToggleRX(true), ToggleRX(false); // hack to prevent noise when squelch off
   RADIO_SetModulation(settings.modulationType = gTxVfo->Modulation);
 
-  BK4819_SetFilterBandwidth(settings.listenBw = BK4819_FILTER_BW_WIDE, false);
+  BK4819_SetFilterBandwidth(settings.listenBw = BK4819_FILTER_BW_WIDE,gTxVfo->Modulation, false);
 
   RelaunchScan();
 

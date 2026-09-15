@@ -36,11 +36,44 @@
 #include "menu.h"
 #include "ui.h"
 
+#include "ceccommon.h"
+
 
 const t_menu_item MenuList[] =
 {
 //   text,     voice ID,                               menu ID
 	{"Step",   VOICE_ID_FREQUENCY_STEP,                MENU_STEP          },
+	
+	//KD8CEC MENU
+	//VERSION 0.1X (after testing, move below)
+#ifdef MENU_SSB_FLT	
+	{"SSBFlt", VOICE_ID_INVALID,                       MENU_SSB_FLT    		},
+#endif
+	//VERSION 0.1M
+	{"U.Info", VOICE_ID_INVALID,                       MENU_RIGINFO       },
+	{"DIG.M",  VOICE_ID_INVALID,                       MENU_DIGITAL_MODE  },	
+	{"T.WSPR", VOICE_ID_INVALID,                       MENU_WSPR_SEND     },	
+
+	{"T.SSTV", VOICE_ID_INVALID,                       MENU_SSTV          },	
+	{"STVEnc", VOICE_ID_INVALID,                       MENU_SSTV_PROTOCOL },	
+	{"STV CW", VOICE_ID_INVALID,                       MENU_SSTV_SENDCW   },	
+
+	//VERSION 0.2B
+	{"T.APRS", VOICE_ID_INVALID,                       MENU_APRS_SEND     },	
+	{"MySSID", VOICE_ID_INVALID,                       MENU_APRS_MYSSID   },	
+	//{"DigiID", VOICE_ID_INVALID,                       MENU_APRS_DIGISSID },	//Remove at 0.2G
+
+	//VERSION 0.1P
+	{"CW KEY", VOICE_ID_INVALID,                       MENU_CWKEY         },
+	{"CWTone", VOICE_ID_INVALID,                       MENU_CWTONE        },
+	{"CW Dly", VOICE_ID_INVALID,                       MENU_CWTXDELAY     },
+	{"CW WPM", VOICE_ID_INVALID,                       MENU_CWSPEED       },
+	{"CW AD1", VOICE_ID_INVALID,                       MENU_CWADC_PAD1_START  },
+	{"CW AD2", VOICE_ID_INVALID,                       MENU_CWADC_PAD2_START  },
+	{"CW AD3", VOICE_ID_INVALID,                       MENU_CWADC_BOTH_START  },
+	{"CW AD4", VOICE_ID_INVALID,                       MENU_CWADC_BOTH_END    },
+	//END OF KD8CEC MENU
+
 	{"TxPwr",  VOICE_ID_POWER,                         MENU_TXP           }, // was "TXP"
 	{"RxDCS",  VOICE_ID_DCS,                           MENU_R_DCS         }, // was "R_DCS"
 	{"RxCTCS", VOICE_ID_CTCSS,                         MENU_R_CTCS        }, // was "R_CTCS"
@@ -49,11 +82,17 @@ const t_menu_item MenuList[] =
 	{"TxODir", VOICE_ID_TX_OFFSET_FREQUENCY_DIRECTION, MENU_SFT_D         }, // was "SFT_D"
 	{"TxOffs", VOICE_ID_TX_OFFSET_FREQUENCY,           MENU_OFFSET        }, // was "OFFSET"
 	{"W/N",    VOICE_ID_CHANNEL_BANDWIDTH,             MENU_W_N           },
-
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
 	{"Live.S", VOICE_ID_CHANNEL_BANDWIDTH,             MENU_LIVESEEK      }, //by KD8CEC
+#endif
 
+#ifdef ENABLE_SCRAMBLER
 	{"Scramb", VOICE_ID_SCRAMBLER_ON,                  MENU_SCR           }, // was "SCR"
+#endif	
+
+#ifdef ENABLE_BCL
 	{"BusyCL", VOICE_ID_BUSY_LOCKOUT,                  MENU_BCL           }, // was "BCL"
+#endif
 	{"Compnd", VOICE_ID_INVALID,                       MENU_COMPAND       },
 	{"Demodu", VOICE_ID_INVALID,                       MENU_AM            }, // was "AM"
 	{"ScAdd1", VOICE_ID_INVALID,                       MENU_S_ADD1        },
@@ -73,7 +112,7 @@ const t_menu_item MenuList[] =
 	{"F1Long",    VOICE_ID_INVALID,                    MENU_F1LONG        },
 	{"F2Shrt",    VOICE_ID_INVALID,                    MENU_F2SHRT        },
 	{"F2Long",    VOICE_ID_INVALID,                    MENU_F2LONG        },
-	{"M Long",    VOICE_ID_INVALID,                    MENU_MLONG         },
+//	{"M Long",    VOICE_ID_INVALID,                    MENU_MLONG         }, //Remark by KD8CEC using Digital Functions
 
 	{"KeyLck", VOICE_ID_INVALID,                       MENU_AUTOLK        }, // was "AUTOLk"
 	{"TxTOut", VOICE_ID_TRANSMIT_OVER_TIME,            MENU_TOT           }, // was "TOT"
@@ -84,7 +123,11 @@ const t_menu_item MenuList[] =
 #endif
 	{"ChDisp", VOICE_ID_INVALID,                       MENU_MDF           }, // was "MDF"
 	{"POnMsg", VOICE_ID_INVALID,                       MENU_PONMSG        },
+
+#ifdef ENABLE_BAT_TXT_MENU	
 	{"BatTxt", VOICE_ID_INVALID,                       MENU_BAT_TXT       },
+#endif
+
 	{"BackLt", VOICE_ID_INVALID,                       MENU_ABR           }, // was "ABR"
 	{"BLMin",  VOICE_ID_INVALID,                       MENU_ABR_MIN       },
 	{"BLMax",  VOICE_ID_INVALID,                       MENU_ABR_MAX       },
@@ -103,23 +146,41 @@ const t_menu_item MenuList[] =
 #ifdef ENABLE_DTMF_CALLING
 	{"ANI ID", VOICE_ID_ANI_CODE,                      MENU_ANI_ID        },
 #endif
+#ifdef ENABLE_UPDOWN_CODE
 	{"UPCode", VOICE_ID_INVALID,                       MENU_UPCODE        },
 	{"DWCode", VOICE_ID_INVALID,                       MENU_DWCODE        },
+#endif	
 	{"PTT ID", VOICE_ID_INVALID,                       MENU_PTT_ID        },
+
+#ifdef ENABLE_DTMF_RECEIVE		
 	{"D ST",   VOICE_ID_INVALID,                       MENU_D_ST          },
+#endif	
 #ifdef ENABLE_DTMF_CALLING
     {"D Resp", VOICE_ID_INVALID,                       MENU_D_RSP         },
 	{"D Hold", VOICE_ID_INVALID,                       MENU_D_HOLD        },
 #endif
+
+#ifdef ENABLE_DTMF_RECEIVE	
 	{"D Prel", VOICE_ID_INVALID,                       MENU_D_PRE         },
+#endif
+
 #ifdef ENABLE_DTMF_CALLING
 	{"D Decd", VOICE_ID_INVALID,                       MENU_D_DCD         },
 	{"D List", VOICE_ID_INVALID,                       MENU_D_LIST        },
 #endif
+
+#ifdef ENABLE_DTMF_RECEIVE	
 	{"D Live", VOICE_ID_INVALID,                       MENU_D_LIVE_DEC    }, // live DTMF decoder
+#endif
+
 #ifdef ENABLE_AM_FIX
+
+#ifdef ENABLE_AMFIXED_MENU
 	{"AM Fix", VOICE_ID_INVALID,                       MENU_AM_FIX        },
 #endif
+
+#endif
+
 #ifdef ENABLE_VOX
 	{"VOX",    VOICE_ID_VOX,                           MENU_VOX           },
 #endif
@@ -154,6 +215,106 @@ const t_menu_item MenuList[] =
 };
 
 const uint8_t FIRST_HIDDEN_MENU_ITEM = MENU_F_LOCK;
+
+//============ KD8CEC MENU =================
+const char gSubMenu_RIGINFO[11][8] =
+{
+	"MY CALL",
+	"MY NAME",
+	"MY GRID",
+	"GPS LAT",
+	"GPS LON",
+	"DX CALL",
+	"AprsDP1",	//
+	"AprsDP2",
+	"AprsMsg",
+	"SSTV M1",
+	"SSTV M2"
+};
+
+const char gSubMenu_SSTV[3][4] =
+{
+	"CQ",
+	"QSO",
+	"LCD"
+};
+
+const char gSubMenu_SSTVPROTOCOL[2][4] =
+{
+	"MT1",	//MARTIN 1
+	"SC1"	//SCOTTIE 1
+};
+
+#ifdef MENU_SSB_FLT
+const char gSubMenu_SSB_FLT[7][5] =
+{
+	"VFO",	//Settings contained in existing VFO
+	"3K",	//3K
+	"2K",	//2K
+	"1.7",	//1.7K
+	"3K+",	//3K  + Inter volume High + Hacking
+	"2K+",	//2K  + Inter volume High + Hacking
+	"1.7+"	//1.7K + Inter volume High + Hacking
+};
+
+#endif
+
+/*
+#define CW_KEYTYPE_STRAIGHT   0   //EXTERAL STRAIHGT KEY WITH 1 REGISTER
+#define CW_KEYTYPE_PADDLE     1   //IAMBIC.A WITH 2 REGISTER
+#define CW_KEYTYPE_KEYPAD_ST  2   //KEYPAD STRAIGHT PTT OR MENU KEY BUT TERRIBLE PERFORMANCE JUST TOY I CONCIDER FOR REMOVE THIS MENU
+#define CW_KEYTYPE_KEYPAD_PDL 3   //COMBINATION PTT AND MENU KEY
+#define CW_KEYTYPE_PC         4   //FOR USING PC PROGRAM AS FLDIGI
+*/
+
+//change version 0.2R
+/*
+const char gSubMenu_CWKEY[5][5] =
+{
+	"K-PD",
+	"K-ST",
+	"E-PD",
+	"E-ST",
+	"+PC",
+};
+*/
+
+#ifdef ENABLE_CEC_CWTX_EXPERT
+const char gSubMenu_CWKEY[3][5] =
+{
+	"IA.A",
+	"IA.B",
+	"E-ST"
+};
+#else
+const char gSubMenu_CWKEY[4][5] =
+{
+	"K-PD",
+	"K-ST",
+	"E-PD",
+	"E-ST"
+};
+#endif
+
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
+const char gSubMenu_LIVESEEK[3][6] =
+{
+	"NONE",
+	"LIVE",
+	"LIVE+"
+};
+#endif
+
+//VERSION 0.2B
+const char gSubMenu_APRS[4][4] =
+{
+	"STS",	//STATUS BROADCAST
+	"MSG",	//MESSAGE TO DX CALL
+	"CWM",	//CW Message CONTINUE
+	"POS"	//PSOTION
+};
+//=========================== END OF KD8CEC MENU STRING
+
 
 const char gSubMenu_TXP[][5] =
 {
@@ -237,13 +398,6 @@ const char* const gSubMenu_MDF[] =
 	"NAME\n+\nFREQ"
 };
 
-const char gSubMenu_LIVESEEK[3][6] =
-{
-	"NONE",
-	"LIVE",
-	"LIVE+"
-};
-
 
 #ifdef ENABLE_ALARM
 	const char gSubMenu_AL_MOD[][5] =
@@ -324,13 +478,14 @@ const char gSubMenu_RX_TX[][6] =
 	"RX",
 	"TX/RX"
 };
-
+#ifdef ENABLE_BAT_TXT_MENU
 const char gSubMenu_BAT_TXT[][8] =
 {
 	"NONE",
 	"VOLTAGE",
 	"PERCENT"
 };
+#endif
 
 const char gSubMenu_BATTYP[][9] =
 {
@@ -338,6 +493,7 @@ const char gSubMenu_BATTYP[][9] =
 	"2200mAh"
 };
 
+#ifdef ENABLE_SCRAMBLER
 const char gSubMenu_SCRAMBLER[][7] =
 {
 	"OFF",
@@ -352,6 +508,7 @@ const char gSubMenu_SCRAMBLER[][7] =
 	"3400Hz",
 	"3500Hz"
 };
+#endif
 
 const t_sidefunction gSubMenu_SIDEFUNCTIONS[] =
 {
@@ -429,6 +586,8 @@ void UI_DisplayMenu(void)
 		if (gMenuCursor > 0 || i > 0)
 			if ((gMenuListCount - 1) != gMenuCursor || i != 2)
 				UI_PrintString(MenuList[gMenuCursor + i - 1].name, 0, 0, i * 2, 8);
+				//UI_PrintString(MenuList[gMenuCursor + i - 1].name, 3, 200 + 6, i * 2, 8);	//for reduce memory not use null(end of string)
+				//test source code is 3, 200+6, so not apply release code, todo : check effect reduce memory , todo:kd8cec ianlee
 
 	// invert the current menu list item pixels
 	for (i = 0; i < (8 * menu_list_width); i++)
@@ -508,9 +667,79 @@ void UI_DisplayMenu(void)
 
 	switch (UI_MENU_GetCurrentMenuId())
 	{
+		//Just Select Value (Integer type)
+		case MENU_APRS_MYSSID:		
 		case MENU_SQL:
 			sprintf(String, "%d", gSubMenuSelection);
 			break;
+		
+//================== KD8CEC MENU
+//VERSION 0.1C
+#ifdef ENABLE_LIVE_SEEKMODE_MENU
+		case MENU_LIVESEEK:
+			strcpy(String, gSubMenu_LIVESEEK[gSubMenuSelection]);
+			break;
+#endif
+//VERSION 0.1M
+		case MENU_SSTV:
+			strcpy(String, gSubMenu_SSTV[gSubMenuSelection]);
+			break;
+//VERSION 0.1P
+		case MENU_CWSPEED:
+			sprintf(String, "%u WPM", gSubMenuSelection);
+			break;
+
+		case MENU_CWKEY : 
+			strcpy(String, gSubMenu_CWKEY[gSubMenuSelection]);
+			break;
+		
+		case MENU_CWTONE:	//ICOM, YAESU ABOUT MAX 1000Khz
+			sprintf(String, "%u Hz", gSubMenuSelection * 10);
+			break;
+
+		case MENU_CWTXDELAY:	// * 100 MILISEC 1 : 100ms, 10: 1s, 100 : 10s
+			sprintf(String, "%u ms", gSubMenuSelection * 100);
+			break;
+
+		case MENU_CWADC_PAD1_START : 	//,	//uint16_t CWKKEY_DIT_AdcFrom  = 3390;  //[EEPROM]
+		case MENU_CWADC_PAD2_START :	//uint16_t CWKKEY_DAH_AdcFrom  = 3580;  //[EEPROM]
+		case MENU_CWADC_BOTH_START :	//uint16_t CWKKEY_BOTH_AdcFrom = 3680;  //[EEPROM]
+		case MENU_CWADC_BOTH_END   : 	//uint16_t CWKKEY_BOTH_AdcTo   = 3750;  //[EEPROM]
+			sprintf(String, "%u", gSubMenuSelection * 10);
+			break;
+
+//VERSION 0.1X
+#ifdef MENU_SSB_FLT
+		case MENU_SSB_FLT:
+			strcpy(String, gSubMenu_SSB_FLT[gSubMenuSelection]);
+			break;
+#endif
+		case MENU_SSTV_PROTOCOL:
+			strcpy(String, gSubMenu_SSTVPROTOCOL[gSubMenuSelection]);
+			break;
+
+//VERSION 0.2B
+		case MENU_APRS_SEND:
+			{
+				const uint32_t frequency = SETTINGS_FetchChannelFrequency(gSubMenuSelection == 3 ? APRS_FREQ_CH2_GPS : APRS_FREQ_CH1_MSG);
+				sprintf(String, "%u.%05u", frequency / 100000, frequency % 100000);
+
+				if (frequency < 150000000)
+					UI_PrintString(String, menu_item_x1, menu_item_x2, 4, 8);
+				
+				strcpy(String, gSubMenu_APRS[gSubMenuSelection]);
+			}
+			break;
+
+		//case MENU_APRS_MYSSID:	//Move to SQL MENU for Reduce Program memory
+		//case MENU_APRS_DIGISSID:	//Remove at 0.2G
+		//	sprintf(String, "SSID %u", gSubMenuSelection);
+		//	break;			
+
+
+
+//====================== END OF KD8CEC MENU
+
 
 		case MENU_MIC:
 			{	// display the mic gain in actual dB rather than just an index number
@@ -581,6 +810,7 @@ void UI_DisplayMenu(void)
 			strcpy(String, gSubMenu_W_N[gSubMenuSelection]);
 			break;
 
+#ifdef ENABLE_SCRAMBLER
 		case MENU_SCR:
 			strcpy(String, gSubMenu_SCRAMBLER[gSubMenuSelection]);
 			#if 1
@@ -590,7 +820,7 @@ void UI_DisplayMenu(void)
 					BK4819_DisableScramble();
 			#endif
 			break;
-
+#endif
 		#ifdef ENABLE_VOX
 			case MENU_VOX:
 				if (gSubMenuSelection == 0)
@@ -631,19 +861,34 @@ void UI_DisplayMenu(void)
 		#ifdef ENABLE_AM_FIX
 			case MENU_AM_FIX:
 		#endif
+
+#ifdef ENABLE_BCL			
 		case MENU_BCL:
+#endif		
 		case MENU_BEEP:
 		case MENU_S_ADD1:
 		case MENU_S_ADD2:
 		case MENU_STE:
+#ifdef ENABLE_DTMF_RECEIVE		
 		case MENU_D_ST:
+		case MENU_D_LIVE_DEC:
+#endif
+
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_DCD:
 #endif
-		case MENU_D_LIVE_DEC:
 		#ifdef ENABLE_NOAA
 			case MENU_NOAA_S:
 		#endif
+
+//KD8CEC ON/OFF MENU
+//*** VERSION 0.2B
+		case MENU_SSTV_SENDCW:
+
+//*** VERSION 0.3P
+		case MENU_DIGITAL_MODE:		
+//END OF KD8CEC ON/OFF MENU
+
 		case MENU_350TX:
 		case MENU_200TX:
 		case MENU_500TX:
@@ -674,11 +919,21 @@ void UI_DisplayMenu(void)
 			break;
 		}
 
+		case MENU_RIGINFO:
 		case MENU_MEM_NAME:
 		{
 			const bool valid = RADIO_CheckValidChannel(gSubMenuSelection, false, 0);
+			
+			if (UI_MENU_GetCurrentMenuId() == MENU_RIGINFO)
+			{
+				if (gSubMenuSelection >= RIGINFO_CWFIRST && gSubMenuSelection <= RIGINFO_CWLAST )
+					sprintf(String, "CW MSG %d", gSubMenuSelection - RIGINFO_CWFIRST);
+				else
+					sprintf(String, "%s", gSubMenu_RIGINFO[gSubMenuSelection - RIGINFO_FIRST]);
+			}
+			else
+				UI_GenerateChannelStringEx(String, valid, gSubMenuSelection);
 
-			UI_GenerateChannelStringEx(String, valid, gSubMenuSelection);
 			UI_PrintString(String, menu_item_x1, menu_item_x2, 0, 8);
 
 			if (valid)
@@ -698,7 +953,7 @@ void UI_DisplayMenu(void)
 						UI_PrintString("^", menu_item_x1 + (8 * edit_index), 0, 4, 8);  // show the cursor
 				}
 
-				if (!gAskForConfirmation)
+				if (!gAskForConfirmation && UI_MENU_GetCurrentMenuId() != MENU_RIGINFO)
 				{	// show the frequency so that the user knows the channels frequency
 					sprintf(String, "%u.%05u", frequency / 100000, frequency % 100000);
 					UI_PrintString(String, menu_item_x1, menu_item_x2, 4 + (gIsInSubMenu && edit_index >= 0), 8);
@@ -735,10 +990,6 @@ void UI_DisplayMenu(void)
 			strcpy(String, gSubMenu_MDF[gSubMenuSelection]);
 			break;
 
-		case MENU_LIVESEEK:
-			strcpy(String, gSubMenu_LIVESEEK[gSubMenuSelection]);
-			break;
-
 		case MENU_RP_STE:
 			if (gSubMenuSelection == 0)
 				strcpy(String, "OFF");
@@ -764,6 +1015,8 @@ void UI_DisplayMenu(void)
 			strcpy(String, gEeprom.ANI_DTMF_ID);
 			break;
 #endif
+
+#ifdef ENABLE_UPDOWN_CODE
 		case MENU_UPCODE:
 			sprintf(String, "%.8s\n%.8s", gEeprom.DTMF_UP_CODE, gEeprom.DTMF_UP_CODE + 8);
 			break;
@@ -771,6 +1024,7 @@ void UI_DisplayMenu(void)
 		case MENU_DWCODE:
 			sprintf(String, "%.8s\n%.8s", gEeprom.DTMF_DOWN_CODE, gEeprom.DTMF_DOWN_CODE + 8);
 			break;
+#endif
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_RSP:
@@ -781,17 +1035,22 @@ void UI_DisplayMenu(void)
 			sprintf(String, "%ds", gSubMenuSelection);
 			break;
 #endif
+
+#ifdef ENABLE_DTMF_RECEIVE
 		case MENU_D_PRE:
 			sprintf(String, "%d*10ms", gSubMenuSelection);
 			break;
+#endif			
 
 		case MENU_PTT_ID:
 			strcpy(String, gSubMenu_PTT_ID[gSubMenuSelection]);
 			break;
 
+#ifdef ENABLE_BAT_TXT_MENU
 		case MENU_BAT_TXT:
 			strcpy(String, gSubMenu_BAT_TXT[gSubMenuSelection]);
 			break;
+#endif
 
 #ifdef ENABLE_DTMF_CALLING
 		case MENU_D_LIST:
@@ -860,7 +1119,7 @@ void UI_DisplayMenu(void)
 		case MENU_F1LONG:
 		case MENU_F2SHRT:
 		case MENU_F2LONG:
-		case MENU_MLONG:
+		//case MENU_MLONG:
 			strcpy(String, gSubMenu_SIDEFUNCTIONS[gSubMenuSelection].name);
 			break;
 
@@ -983,6 +1242,7 @@ void UI_DisplayMenu(void)
 	if ((UI_MENU_GetCurrentMenuId() == MENU_RESET    ||
 	     UI_MENU_GetCurrentMenuId() == MENU_MEM_CH   ||
 	     UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME ||
+		 UI_MENU_GetCurrentMenuId() == MENU_RIGINFO ||
 	     UI_MENU_GetCurrentMenuId() == MENU_DEL_CH) && gAskForConfirmation)
 	{	// display confirmation
 		char *pPrintStr = (gAskForConfirmation == 1) ? "SURE?" : "WAIT!";

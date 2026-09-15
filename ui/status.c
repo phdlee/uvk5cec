@@ -33,9 +33,15 @@
 #include "ui/helper.h"
 #include "ui/ui.h"
 #include "ui/status.h"
+#include "ceccommon.h"
 
 void UI_DisplayStatus()
 {
+	/*
+	if (ScreenDelayTime > 0)
+		return;	
+	*/
+
 	gUpdateStatus = false;
 	memset(gStatusLine, 0, sizeof(gStatusLine));
 
@@ -45,13 +51,16 @@ void UI_DisplayStatus()
 
 	// POWER-SAVE indicator
 	if (gCurrentFunction == FUNCTION_TRANSMIT) {
-		memcpy(line + x, BITMAP_TX, sizeof(BITMAP_TX));
+		//memcpy(line + x, BITMAP_TX, sizeof(BITMAP_TX));
+		CEC_DisplaySmallest("TX",  x, 1, true, true);  
 	}
 	else if (FUNCTION_IsRx()) {
-		memcpy(line + x, BITMAP_RX, sizeof(BITMAP_RX));
+		//memcpy(line + x, BITMAP_RX, sizeof(BITMAP_RX));
+		CEC_DisplaySmallest("RX",  x, 1, true, true);  
 	}
 	else if (gCurrentFunction == FUNCTION_POWER_SAVE) {
-		memcpy(line + x, BITMAP_POWERSAVE, sizeof(BITMAP_POWERSAVE));
+		//memcpy(line + x, BITMAP_POWERSAVE, sizeof(BITMAP_POWERSAVE));
+		CEC_DisplaySmallest("PS",  x, 1, true, true);  
 	}
 	x += 8;
 	unsigned int x1 = x;
@@ -91,7 +100,8 @@ void UI_DisplayStatus()
 			else {	// frequency mode
 				s = "S";
 			}
-			UI_PrintStringSmallBufferNormal(s, line + x + 1);
+			//UI_PrintStringSmallBufferNormal(s, line + x + 1);
+			UI_PrintStringSmallBufferNormal(s, line + x);
 			x1 = x + 10;
 		}
 	}
@@ -106,30 +116,66 @@ void UI_DisplayStatus()
 	x += sizeof(BITMAP_VoicePrompt);
 #endif
 
+    x += 1;
 	if(!SCANNER_IsScanning()) {
 		uint8_t dw = (gEeprom.DUAL_WATCH != DUAL_WATCH_OFF) + (gEeprom.CROSS_BAND_RX_TX != CROSS_BAND_OFF) * 2;
-		if(dw == 1 || dw == 3) { // DWR - dual watch + respond
+		if(dw == 1 || dw == 3) 
+		{   
+			/*
+			// DWR - dual watch + respond
 			if(gDualWatchActive)
-				memcpy(line + x + (dw==1?0:2), BITMAP_TDR1, sizeof(BITMAP_TDR1) - (dw==1?0:5));
+			{
+				//memcpy(line + x + (dw==1?0:2), BITMAP_TDR1, sizeof(BITMAP_TDR1) - (dw==1?0:5));
+				CEC_DisplaySmallest("DWR",  x, 1, true, true);  
+			}
 			else
 				memcpy(line + x + 3, BITMAP_TDR2, sizeof(BITMAP_TDR2));
+			*/
+			CEC_DisplaySmallest("DWR",  x, 1, true, true);  
+			if(! gDualWatchActive)
+				CEC_ReverseScreen(gStatusLine + x - 2,  15);
 		}
 		else if(dw == 2) { // XB - crossband
 			memcpy(line + x + 2, BITMAP_XB, sizeof(BITMAP_XB));
 		}
 	}
-	x += sizeof(BITMAP_TDR1) + 1;
+	//x += sizeof(BITMAP_TDR1) + 1;
+	x += 15;
 
 #ifdef ENABLE_VOX
 	// VOX indicator
-	if (gEeprom.VOX_SWITCH) {
+	if (gEeprom.VOX_SWITCH) 
+	{
+		/*
 		memcpy(line + x, BITMAP_VOX, sizeof(BITMAP_VOX));
 		x1 = x + sizeof(BITMAP_VOX) + 1;
+		*/
+		CEC_DisplaySmallest("VOX",  x, 1,true, true);  
 	}
-	x += sizeof(BITMAP_VOX) + 1;
+	//x += sizeof(BITMAP_VOX) + 4;
+	x += 15;
 #endif
 
-	x = MAX(x1, 61u);
+	if (DigitalMode)
+	{
+		//63520
+		//UI_PrintStringSmallBufferNormal("DIG", line + x);
+
+		//63480
+		CEC_DisplaySmallest("DIG+",  x, 1,true, true);  
+		//CEC_ReverseScreen(gStatusLine + x, 11);
+
+		//CEC_DisplaySmallest("\\",  x, 1,true, true);  
+		//CEC_ReverseScreen(gStatusLine + x, 11);
+		//x += 13;
+		//UI_PrintStringSmallBufferNormal(, line + 11);
+
+
+		x += 24;
+	}
+
+
+	x = MAX(x1, 65u);
 
 	// KEY-LOCK indicator
 	if (gEeprom.KEY_LOCK) {
@@ -137,7 +183,8 @@ void UI_DisplayStatus()
 		x += sizeof(BITMAP_KeyLock);
 		x1 = x;
 	}
-	else if (gWasFKeyPressed) {
+	else if (gWasFKeyPressed) 
+	{
 		memcpy(line + x, BITMAP_F_Key, sizeof(BITMAP_F_Key));
 		x += sizeof(BITMAP_F_Key);
 		x1 = x;
@@ -154,21 +201,24 @@ void UI_DisplayStatus()
 			default:
 			case 0:
 				break;
-
+#ifdef ENABLE_BAT_TXT_MENU
 			case 1:	{	// voltage
 				const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999; // limit to 9.99V
 				sprintf(s, "%u.%02uV", voltage / 100, voltage % 100);
 				break;
 			}
-
+#endif
 			case 2:		// percentage
-				sprintf(s, "%u%%", BATTERY_VoltsToPercent(gBatteryVoltageAverage));
+				sprintf(s, "%u?", BATTERY_VoltsToPercent(gBatteryVoltageAverage));
 				break;
 		}
 
-		unsigned int space_needed = (7 * strlen(s));
-		if (x2 >= (x1 + space_needed))
-			UI_PrintStringSmallBufferNormal(s, line + x2 - space_needed);
+		unsigned int space_needed = (4 * strlen(s));
+		//if (x2 >= (x1 + space_needed))
+		{
+			//UI_PrintStringSmallBufferNormal(s, line + x2 - space_needed);
+			CEC_DisplaySmallest(s,  x2 - space_needed, 1,true, true); 
+		}
 	}
 
 	// move to right side of the screen

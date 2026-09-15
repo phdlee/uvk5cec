@@ -3,10 +3,11 @@
 # 0 = disable
 # 1 = enable
 
+# ENABLE_FMRADIO - Size : 4220 Byte
 # ---- STOCK QUANSHENG FERATURES ----
 ENABLE_UART                   ?= 1
 ENABLE_AIRCOPY                ?= 0
-ENABLE_FMRADIO                ?= 1
+ENABLE_FMRADIO                ?= 0
 ENABLE_NOAA                   ?= 0
 ENABLE_VOICE                  ?= 0
 ENABLE_VOX                    ?= 1
@@ -17,19 +18,39 @@ ENABLE_DTMF_CALLING           ?= 0	#Default Disabled by KD8CEC
 ENABLE_FLASHLIGHT             ?= 1
 
 # ---- STOCK QUANSHENG FERATURES for Reduce Usage Flash memroy ----
+ENABLE_SCRAMBLER              ?= 0
 ENABLE_BCL                    ?= 0
 ENABLE_10TIME_TRY_UNALL_LOCK  ?= 0
 ENABLE_TX_STOP_BY_CHIPRANGE   ?= 0
 ENABLE_HAMBAND_TX_CONTROL     ?= 1
 
+#D ST, D PREL, D LIVE, 
+ENABLE_DTMF_RECEIVE           ?= 0
+ENABLE_UPDOWN_CODE            ?= 0
+
+#--- ADDED
+ENABLE_HAMBAND_TX_CONTROL     ?= 1
+ENABLE_CEC_SSTV				  ?= 1
+ENABLE_CEC_CWTX				  ?= 1
+#---- PADDLE WPM > 20 USING TIMER WITHOUT K-PAD, K-STRAIGHT, BUT INCLUDE IAMBIC B, not expert mode : 62204, 62480 (+ 276), so if not enough memory remove vox (61816)
+ENABLE_CEC_CWTX_EXPERT	  	  ?= 1
+ENABLE_CEC_CAT                ?= 1
+ENABLE_CEC_RTTY               ?= 1
+ENABLE_CEC_APRS               ?= 1
+ENABLE_CEC_FT4_FT8            ?= 1
+ENABLE_CEC_CW_DECODE          ?= 1
+# ---- END OF KD8CEC WORK ------------------------------------------
+
+#plan reduce program memory, fm radio mod, enable_small_bold disable (61148 -> 60536), f_cal_menu (60536 -> 60380), AUDIO_BAR (60380 -> 60076) : total 1KByte
+#small bold using just RX, TX and Channel Name, RX, TX
 # ---- CUSTOM MODS ----
 ENABLE_BIG_FREQ               ?= 1
-ENABLE_SMALL_BOLD             ?= 1
+ENABLE_SMALL_BOLD             ?= 0
 ENABLE_CUSTOM_MENU_LAYOUT     ?= 1
 ENABLE_KEEP_MEM_NAME          ?= 1
 ENABLE_WIDE_RX                ?= 1
-ENABLE_TX_WHEN_AM             ?= 0
-ENABLE_F_CAL_MENU             ?= 0
+ENABLE_TX_WHEN_AM             ?= 1
+ENABLE_F_CAL_MENU             ?= 1
 ENABLE_CTCSS_TAIL_PHASE_SHIFT ?= 0
 ENABLE_BOOT_BEEPS             ?= 0
 ENABLE_SHOW_CHARGE_LEVEL      ?= 0
@@ -41,11 +62,18 @@ ENABLE_FASTER_CHANNEL_SCAN    ?= 1
 ENABLE_RSSI_BAR               ?= 1
 ENABLE_AUDIO_BAR              ?= 1
 ENABLE_COPY_CHAN_TO_VFO       ?= 1
-ENABLE_SPECTRUM               ?= 1
+#DEFAULT 1 VERSION 0.1P CHANGED 0
+ENABLE_SPECTRUM               ?= 0
 ENABLE_REDUCE_LOW_MID_TX_POWER?= 0
 ENABLE_BYP_RAW_DEMODULATORS   ?= 0
 ENABLE_BLMIN_TMP_OFF          ?= 0
 ENABLE_SCAN_RANGES            ?= 1
+ENABLE_SSTV_APRS_SIDETOME     ?= 1
+
+# ---- VERSION 0.3A  (increase 100 byte)
+ENABLE_CEC_INTERFACE_CABLE    ?= 0
+ENABLE_VOLT_HIGH_CHECK        ?= 1
+
 
 # ---- DEBUGGING ----
 ENABLE_AM_FIX_SHOW_DATA       ?= 0
@@ -57,6 +85,18 @@ ENABLE_CLANG                  ?= 0
 ENABLE_SWD                    ?= 0
 ENABLE_OVERLAY                ?= 0
 ENABLE_LTO                    ?= 1
+
+
+#---- FIXED OPTION FOR REDUCE PROGRAM MEMORY
+# Values that are always enabled by default without the need for a menu
+# FIXED VALUE IS 2 (LIVE +)
+ENABLE_LIVE_SEEKMODE_MENU     ?= 0
+# FIXED VALUE IS 2K+ (Highest performance)
+ENABLE_SSB_BW_MENU            ?= 0
+# FIXED VALUE IS ON (Not Apply)
+ENABLE_AMFIXED_MENU           ?= 1
+# MENU_BAT_TXT  60828
+ENABLE_BAT_TXT_MENU           ?= 0
 
 #############################################################
 
@@ -89,8 +129,19 @@ OBJS += external/printf/printf.o
 # IF YOU USE THIS FUNCTION, COPY BELOW TO OTHER FIRMWARE#
 #########################################################
 OBJS += ceccommon.o
-
-
+OBJS += cecsstv1.o
+OBJS += cecaprs.o
+OBJS += ceccat.o
+OBJS += cecmorse.o
+OBJS += cecrtty.o
+OBJS += cecgps.o
+OBJS += minmea.o
+OBJS += cectimer.o
+OBJS += cecspectrum.o
+OBJS += cecfmradio.o
+OBJS += cecdigital.o
+OBJS += cecswuart.o
+OBJS += cecwsprsend.o
 ################### END OF ADDED BY KD8CEC ##############
 
 # Drivers
@@ -221,7 +272,7 @@ AUTHOR_STRING ?= KD8CEC_FROM_SOURCE_CODE_EGZUMER
 # can set own version string here (max 7 chars)
 
 # CHANGE VERSION TYPE
-VERSION_STRING ?= CEC_0.1c
+VERSION_STRING ?= CEC_0.3V
 
 
 ASFLAGS = -c -mcpu=cortex-m0
@@ -258,6 +309,33 @@ CFLAGS += -Wextra
 
 CFLAGS += -DPRINTF_INCLUDE_CONFIG_H
 CFLAGS += -DAUTHOR_STRING=\"$(AUTHOR_STRING)\" -DVERSION_STRING=\"$(VERSION_STRING)\"
+
+ifeq ($(ENABLE_CEC_INTERFACE_CABLE),1)
+CFLAGS += -DENABLE_CEC_INTERFACE_CABLE
+endif
+
+ifeq ($(ENABLE_VOLT_HIGH_CHECK),1)
+CFLAGS += -DENABLE_VOLT_HIGH_CHECK
+endif
+
+
+ifeq ($(ENABLE_LIVE_SEEKMODE_MENU),1)
+CFLAGS += -DENABLE_LIVE_SEEKMODE_MENU
+endif
+ifeq ($(ENABLE_SSB_BW_MENU),1)
+CFLAGS += -DENABLE_SSB_BW_MENU
+endif
+ifeq ($(ENABLE_AMFIXED_MENU),1)
+CFLAGS += -DENABLE_AMFIXED_MENU
+endif
+
+ifeq ($(ENABLE_BAT_TXT_MENU),1)
+CFLAGS += -DENABLE_BAT_TXT_MENU
+endif
+
+ifeq ($(ENABLE_SSTV_APRS_SIDETOME),1)
+CFLAGS += -DENABLE_SSTV_APRS_SIDETOME
+endif
 
 ifeq ($(ENABLE_SPECTRUM),1)
 CFLAGS += -DENABLE_SPECTRUM
@@ -386,9 +464,13 @@ ifeq ($(ENABLE_CUSTOM_MENU_LAYOUT),1)
 	CFLAGS  += -DENABLE_CUSTOM_MENU_LAYOUT
 endif
 
+# KD8CEC WORK
 # ---- STOCK QUANSHENG FERATURES for Reduce Usage Flash memroy ----
 ifeq ($(ENABLE_BCL),1)
 	CFLAGS  += -DENABLE_BCL
+endif
+ifeq ($(ENABLE_SCRAMBLER),1)
+	CFLAGS  += -DENABLE_SCRAMBLER
 endif
 ifeq ($(ENABLE_10TIME_TRY_UNALL_LOCK),1)
 	CFLAGS  += -DENABLE_10TIME_TRY_UNALL_LOCK
@@ -400,7 +482,43 @@ ifeq ($(ENABLE_HAMBAND_TX_CONTROL),1)
 	CFLAGS  += -DENABLE_HAMBAND_TX_CONTROL
 endif
 
-# ---- END OF Option
+ifeq ($(ENABLE_DTMF_RECEIVE),1)
+CFLAGS += -DENABLE_DTMF_RECEIVE
+endif
+ifeq ($(ENABLE_UPDOWN_CODE),1)
+CFLAGS += -DENABLE_UPDOWN_CODE
+endif
+# ---- END OF option for stock firmware features
+
+ifeq ($(ENABLE_CEC_SSTV),1)
+CFLAGS += -DENABLE_CEC_SSTV
+endif
+
+ifeq ($(ENABLE_CEC_CWTX),1)
+CFLAGS += -DENABLE_CEC_CWTX
+endif
+
+ifeq ($(ENABLE_CEC_CWTX_EXPERT),1)
+CFLAGS += -DENABLE_CEC_CWTX_EXPERT
+endif
+
+ifeq ($(ENABLE_CEC_CAT),1)
+CFLAGS += -DENABLE_CEC_CAT
+endif
+ifeq ($(ENABLE_CEC_RTTY),1)
+CFLAGS += -DENABLE_CEC_RTTY
+endif
+ifeq ($(ENABLE_CEC_APRS),1)
+CFLAGS += -DENABLE_CEC_APRS
+endif
+ifeq ($(ENABLE_CEC_FT4_FT8),1)
+CFLAGS += -DENABLE_CEC_FT4_FT8
+endif
+ifeq ($(ENABLE_CEC_CW_DECOD),1)
+CFLAGS += -DENABLE_CEC_CW_DECOD
+endif
+
+# END OF KD8CEC WORK
 
 
 LDFLAGS =

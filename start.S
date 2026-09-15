@@ -28,6 +28,10 @@
 	.global SystickHandler
 	.weak SystickHandler
 
+# Added by KD8CEC
+	.global HandlerTIMER_BASE0
+	.weak HandlerTIMER_BASE0
+
 	.section .text.isr
 
 Stack:

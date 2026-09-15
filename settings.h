@@ -199,12 +199,16 @@ typedef struct {
 	char                  KILL_CODE[8];
 	char                  REVIVE_CODE[8];
 #endif
+#ifdef ENABLE_UPDOWN_CODE
 	char                  DTMF_UP_CODE[16];
+#endif	
 
 	uint8_t               field57_0x6c;
 	uint8_t               field58_0x6d;
 
+#ifdef ENABLE_UPDOWN_CODE
 	char                  DTMF_DOWN_CODE[16];
+#endif	
 
 	uint8_t               field60_0x7e;
 	uint8_t               field61_0x7f;

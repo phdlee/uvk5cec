@@ -22,6 +22,7 @@
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 #include "misc.h"
+#include "ceccommon.h"
 
 #ifndef ARRAY_SIZE
 	#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof((arr)[0]))
@@ -46,6 +47,17 @@ void UI_GenerateChannelString(char *pString, const uint8_t Channel)
 
 void UI_GenerateChannelStringEx(char *pString, const bool bShowPrefix, const uint8_t ChannelNumber)
 {
+	if (ChannelNumber == APRS_FREQ_CH1_MSG)
+	{
+		strcpy(pString, "APRS MSG");
+		return;
+	}
+	else if (ChannelNumber == APRS_FREQ_CH2_GPS)
+	{
+		strcpy(pString, "APRS GPS");
+		return;
+	}
+
 	if (gInputBoxIndex > 0) {
 		for (unsigned int i = 0; i < 3; i++) {
 			pString[i] = (gInputBox[i] == 10) ? '-' : gInputBox[i] + '0';

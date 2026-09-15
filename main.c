@@ -72,7 +72,9 @@ void Main(void)
 		| SYSCON_DEV_CLK_GATE_SARADC_BITS_ENABLE
 		| SYSCON_DEV_CLK_GATE_CRC_BITS_ENABLE
 		| SYSCON_DEV_CLK_GATE_AES_BITS_ENABLE
-		| SYSCON_DEV_CLK_GATE_PWM_PLUS0_BITS_ENABLE;
+		| SYSCON_DEV_CLK_GATE_PWM_PLUS0_BITS_ENABLE
+		| SYSCON_DEV_CLK_GATE_TIMER_BASE0_BITS_ENABLE
+		;
 
 
 	SYSTICK_Init();
@@ -81,7 +83,7 @@ void Main(void)
 	boot_counter_10ms = 250;   // 2.5 sec
 
 #ifdef ENABLE_UART
-	UART_Init();
+	UART_Init(UART_BAUD_38400_CLOCK_DIV);
 	UART_Send(Version, strlen(Version));
 #endif
 
@@ -216,13 +218,31 @@ void Main(void)
 		}
 #endif
 
-#ifdef ENABLE_NOAA
+
+#ifdef ENABLE_NOAA    
 		RADIO_ConfigureNOAA();
 #endif
 	}
+	//CEC_Spectrum_WithWaterFall();
+	//DigitalModeStart(99);	//WSPR MODE (Stand alone) 0:FT8, 1 : FT4, 2: WSPR
+	//CEC_FMRadio();
+
+if (DigitalMode)
+{
+  CEC_SendRemoteData(0x21, 0xB1 /* CEC_CMD_REBOOT */, 0, 0, 0);
+
+#ifdef ENABLE_CEC_INTERFACE_CABLE
+    CECSWUartInit();
+#else    
+    UART_Init(UART_BAUD_57600_CLOCK_DIV);
+#endif    
+}
 
 	while (true) {
 		APP_Update();
+
+		if (DigitalMode)
+			ProcessRemoteControl(0);
 
 		if (gNextTimeslice) {
 
@@ -230,6 +250,12 @@ void Main(void)
 
 			if (gNextTimeslice_500ms) 
 			{
+				if (ScreenDelayTime > 0)
+				{
+					ScreenDelayTime--;
+					gUpdateDisplay = true;
+				}
+
 				APP_TimeSlice500ms();
 				CEC_TimeSlice500ms();
 			}

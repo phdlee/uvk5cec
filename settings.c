@@ -201,6 +201,7 @@ void SETTINGS_InitEEPROM(void)
 	}
 #endif
 
+#ifdef ENABLE_UPDOWN_CODE
 	// 0EF8..0F07
 	EEPROM_ReadBuffer(0x0EF8, Data, sizeof(gEeprom.DTMF_UP_CODE));
 	if (DTMF_ValidateCodes((char *)Data, sizeof(gEeprom.DTMF_UP_CODE))) {
@@ -216,6 +217,7 @@ void SETTINGS_InitEEPROM(void)
 	} else {
 		strcpy(gEeprom.DTMF_DOWN_CODE, "54321");
 	}
+#endif
 
 	// 0F18..0F1F
 	EEPROM_ReadBuffer(0x0F18, Data, 8);
@@ -241,7 +243,12 @@ void SETTINGS_InitEEPROM(void)
 	gSetting_ScrambleEnable    = (Data[6] < 2) ? Data[6] : true;
 	//gSetting_TX_EN             = (Data[7] & (1u << 0)) ? true : false;
 	gSetting_live_DTMF_decoder = !!(Data[7] & (1u << 1));
+#ifdef ENABLE_BAT_TXT_MENU
 	gSetting_battery_text      = (((Data[7] >> 2) & 3u) <= 2) ? (Data[7] >> 2) & 3 : 2;
+#else	
+	gSetting_battery_text      = 2;	//Default Value is Percent
+#endif	
+
 	#ifdef ENABLE_AUDIO_BAR
 		gSetting_mic_bar       = !!(Data[7] & (1u << 4));
 	#endif
@@ -256,6 +263,7 @@ void SETTINGS_InitEEPROM(void)
 		gEeprom.ScreenChannel[1] = gEeprom.MrChannel[1];
 	}
 
+//Remark by KD8CEC
 	// 0D60..0E27
 	EEPROM_ReadBuffer(0x0D60, gMR_ChannelAttributes, sizeof(gMR_ChannelAttributes));
 	for(uint16_t i = 0; i < sizeof(gMR_ChannelAttributes); i++) {
@@ -265,6 +273,7 @@ void SETTINGS_InitEEPROM(void)
 			att->band = 0xf;
 		}
 	}
+
 
 	// 0F30..0F3F
 	EEPROM_ReadBuffer(0x0F30, gCustomAesKey, sizeof(gCustomAesKey));
@@ -280,10 +289,63 @@ void SETTINGS_InitEEPROM(void)
 
 	//KD8CEC WORK ===================================
 	EEPROM_ReadBuffer(CEC_EEPROM_START1 + 0, Data, 8);
+
+#ifdef ENABLE_LIVE_SEEKMODE_MENU	
 	CEC_LiveSeekMode = Data[0] < 7 ? Data[0] : 0;  //
-	CW_KEYTYPE 		 = Data[1] < 7 ? Data[1] : 0;  //
-	CW_SPEED 		 = Data[2] < 51 && Data[2] > 4 ? Data[2] : 10;  //
-	CW_TONE 		 = Data[3] < 120 ? Data[3] : 70;  //
+#else
+	CEC_LiveSeekMode = 2;	//FIXED VALUE
+#endif	
+
+
+#ifdef ENABLE_CEC_CWTX_EXPERT
+	CW_KeyType 		 = Data[1] < 3 ? Data[1] : 0;  					// IAMBIC.A, IAMBIC.B, STRAIGHT
+#else
+	CW_KeyType 		 = Data[1] < 5 ? Data[1] : 0;  					// KEYPAD ST, KEYPAD PADDLE, EXTERNAL ST,EXTERNAL PAD, PC+ (remove when 0.2R)
+#endif	
+	CW_WPM 		 	 = Data[2] < 51 && Data[2] > 4 ? Data[2] : 10;  // Default 10WPM
+	CW_Tone 		 = Data[3] < 150 ? Data[3] : 70;  				// Default 700Hz
+	CW_TXDelay 		 = Data[4] < 150 ? Data[4] : 20;  				// Default 2 Second
+
+#ifdef MENU_SSB_FLT
+	CEC_SSB_FLT      = Data[5] < 10 ?  Data[5] : 0;  				// SSB FILTER (0 : VFO FILTER, 1:3, 2:2, 4:1.7, 5:3,6:2,7:1)  (5,6,7 with inter nal volume High with Hacking regist)
+#endif
+
+	SSTV_Protocol    = Data[6] < 10 ?  Data[6] : 0;			        //0: MARTIN1, 1: SCOTTIE1
+	SSTV_SendCW      = Data[7] < 10 ?  Data[7] : 0;			        //0: OFF, 1 : ON
+	//READ ADCVALUE FOR EXTERNAL CW KEY
+	EEPROM_ReadBuffer(CEC_EEPROM_START1 + 8, &CW_ADC, 8);	
+
+	//VALIDATION CHECK
+	/*
+	if (CW_ADC.CWKKEY_DIT_AdcFrom > 7000 || CW_ADC.CWKKEY_DIT_AdcFrom < 3300)	//20K
+		CW_ADC.CWKKEY_DIT_AdcFrom =  3390;	//10K, 20K using Register
+	if (CW_ADC.CWKKEY_DAH_AdcFrom > 7000 || CW_ADC.CWKKEY_DAH_AdcFrom < 3300)	//10K
+		CW_ADC.CWKKEY_DAH_AdcFrom =  3580;	//10K, 20K using Register, or 3575
+	if (CW_ADC.CWKKEY_BOTH_AdcFrom > 7000 || CW_ADC.CWKKEY_BOTH_AdcFrom < 3300)	//7.5K
+		CW_ADC.CWKKEY_BOTH_AdcFrom = 3680;	//10K + 20K
+	if (CW_ADC.CWKKEY_BOTH_AdcTo > 7000 || CW_ADC.CWKKEY_BOTH_AdcTo < 3300)		//max
+		CW_ADC.CWKKEY_BOTH_AdcTo = 3750;	//Not Need, but prevent miss operation
+	*/
+	if (CW_ADC.CWKKEY_DIT_AdcFrom > 7000)	//20K
+		CW_ADC.CWKKEY_DIT_AdcFrom =  3390;	//10K, 20K using Register
+	if (CW_ADC.CWKKEY_DAH_AdcFrom > 7000)	//10K
+		CW_ADC.CWKKEY_DAH_AdcFrom =  3580;	//10K, 20K using Register, or 3575
+	if (CW_ADC.CWKKEY_BOTH_AdcFrom > 7000)	//7.5K
+		CW_ADC.CWKKEY_BOTH_AdcFrom = 3680;	//10K + 20K
+	if (CW_ADC.CWKKEY_BOTH_AdcTo > 7000)		//max
+		CW_ADC.CWKKEY_BOTH_AdcTo = 3750;	//Not Need, but prevent miss operation
+
+	//offset 16 using sstv
+
+	EEPROM_ReadBuffer(CEC_EEPROM_START1_SEC2, Data, 8);
+	aprs_MYSSID   = Data[0] < 10 ? Data[0] : 1;  //
+	//aprs_DIGISSID = Data[1] < 10 ? Data[1] : 1;  //
+	DigitalMode = Data[2] < 10 ? Data[2] : 0;
+
+	//WATERFALL_rssiOffset = Data[2] < 100 ? Data[2] : 30;  //
+	//WATERFALL_ThresHold = Data[3] < 50 ? Data[3] : 7;  //
+
+
 	//END OF KD8CEC WORK ============================
 
 }
@@ -602,15 +664,35 @@ void SETTINGS_SaveSettings(void)
 
 
 	//KD8CEC WORK ===================================
+#ifdef ENABLE_LIVE_SEEKMODE_MENU	
 	State[0] = CEC_LiveSeekMode;
-	State[1] = CW_KEYTYPE;
-	State[2] = CW_SPEED;
-	State[3] = CW_TONE;
+#endif
+
+	State[1] = CW_KeyType;
+	State[2] = CW_WPM;
+	State[3] = CW_Tone;
+	State[4] = CW_TXDelay;
+#ifdef MENU_SSB_FLT	
+	State[5] = CEC_SSB_FLT;
+#endif	
+	State[6] = SSTV_Protocol;
+	State[7] = SSTV_SendCW;
+	EEPROM_WriteBuffer(CEC_EEPROM_START1 + 0, State);
+
+	//ADC VALUES FOR EXTERNAL CW KEY
+	EEPROM_WriteBuffer(CEC_EEPROM_START1 + 8, &CW_ADC);
+
+	//offset 16 using sstv
+	State[0] = aprs_MYSSID;
+	//State[1] = aprs_DIGISSID;
+	State[2] = DigitalMode;
+	State[3] = 0xFF;
 	State[4] = 0xFF;
 	State[5] = 0xFF;
 	State[6] = 0xFF;
 	State[7] = 0xFF;
-	EEPROM_WriteBuffer(CEC_EEPROM_START1 + 0, State);
+
+	EEPROM_WriteBuffer(CEC_EEPROM_START1_SEC2, State);
 	//END OF KD8CEC WORK ============================	
 }
 
@@ -721,7 +803,8 @@ void SETTINGS_UpdateChannel(uint8_t channel, const VFO_Info_t *pVFO, bool keep)
 		state[channel & 7u] = att.__val;
 		EEPROM_WriteBuffer(offset, state);
 
-		gMR_ChannelAttributes[channel] = att;
+		//gMR_ChannelAttributes[channel] = att;
+		SetMR_ChannelAttributes(channel, att);
 
 		if (IS_MR_CHANNEL(channel)) {	// it's a memory channel
 			if (!keep) {

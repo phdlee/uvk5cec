@@ -3,7 +3,7 @@
 
 // all these images are on their right sides
 // turn your monitor 90-deg anti-clockwise to see the images
-
+/*
 const uint8_t BITMAP_POWERSAVE[8] =
 {
 	// "PS"
@@ -15,33 +15,39 @@ const uint8_t BITMAP_POWERSAVE[8] =
 	0b01000110,
 	0b01001001,
 	0b00110001
-
 };
+*/
 
+/*
 const uint8_t BITMAP_TX[8] =
 {	// "TX"
 	0b00000000,
 	0b00000001,
-	0b00000001,
 	0b01111111,
 	0b00000001,
-	0b00000001,
 	0b00000000,
-	0b00000000
+	0b01100011,
+	0b00011100,
+	0b01100011
 };
+*/
 
+/*
 const uint8_t BITMAP_RX[8] =
 {	// "RX"
+
 	0b00000000,
 	0b01111111,
-	0b00001001,
 	0b00011001,
-	0b01100110,
+	0b01101110,
 	0b00000000,
-	0b00000000,
-	0b00000000
+	0b01100011,
+	0b00011100,
+	0b01100011
 };
+*/
 
+/*
 const uint8_t BITMAP_FM[10] =
 {	// "FM"
 	0b00000000,
@@ -55,6 +61,7 @@ const uint8_t BITMAP_FM[10] =
 	0b00000010,
 	0b01111111
 };
+*/
 
 const uint8_t BITMAP_BatteryLevel[2] =
 {
@@ -183,7 +190,7 @@ const uint8_t BITMAP_XB[12] =
 	0b00110110
 };
 
-
+/*
 const uint8_t BITMAP_TDR1[16] =
 {	// "DWR"
 	0b00000000,
@@ -203,7 +210,9 @@ const uint8_t BITMAP_TDR1[16] =
 	0b00101001,
 	0b01000110
 };
+*/
 
+/*
 const uint8_t BITMAP_TDR2[10] =
 {	// "><" .. DW on hold
 	0b00000000,
@@ -217,6 +226,7 @@ const uint8_t BITMAP_TDR2[10] =
 	0b00110110,
 	0b00100010,
 };
+*/
 
 #ifdef ENABLE_VOICE
 	const uint8_t BITMAP_VoicePrompt[9] =

@@ -71,6 +71,8 @@
 #include "ui/menu.h"
 #include "ui/status.h"
 #include "ui/ui.h"
+#include "ceccommon.h"
+#include "cecmorse.h"
 
 static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
 
@@ -608,6 +610,7 @@ static void CheckRadioInterrupts(void)
 			{
 				if (gCurrentFunction != FUNCTION_TRANSMIT)
 				{
+#ifdef ENABLE_DTMF_RECEIVE					
 					if (gSetting_live_DTMF_decoder)
 					{
 						size_t len = strlen(gDTMF_RX_live);
@@ -621,6 +624,7 @@ static void CheckRadioInterrupts(void)
 						gDTMF_RX_live_timeout = DTMF_RX_live_timeout_500ms;  // time till we delete it
 						gUpdateDisplay        = true;
 					}
+#endif
 
 #ifdef ENABLE_DTMF_CALLING
 					if (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED)
@@ -1029,19 +1033,63 @@ static void CheckKeys(void)
 			gPttDebounceCounter = 0;
 	}
 	else if (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT) && !SerialConfigInProgress())
-	{	// PTT pressed
-		if (++gPttDebounceCounter >= 3)	    // 30ms
+	{	
+		if (ScreenDelayTime > 0)	//Ignore PTT while Screen display from Remote data
+			return;
+		
+		// PTT pressed
+		if (++gPttDebounceCounter >= 3)	    // 30ms // 30ms //TODO CHANGE : KD8CEC 30ms => 200ms
 		{	// start transmitting
 			boot_counter_10ms   = 0;
 			gPttDebounceCounter = 0;
 			gPttIsPressed       = true;
-			ProcessKey(KEY_PTT, true, false);
+
+			//BY KD8CEC FOR CW HOLD TX MODE			
+			//ProcessKey(KEY_PTT, true, false);
+			if (((gRxVfo->Modulation) == MODULATION_CWN  || 
+			    (gRxVfo->Modulation) == MODULATION_CWFM || 
+			    (gRxVfo->Modulation) == MODULATION_CW   ) && (gScreenToDisplay == DISPLAY_MAIN ))
+			{
+				CWTXStart(1, 3);
+			}
+			else			
+				ProcessKey(KEY_PTT, true, false);			
 		}
 	}
 	else
 		gPttDebounceCounter = 0;
 
 // --------------------- OTHER KEYS ----------------------------
+	//Check ADC Value for Auto Change TX Mode by PADDLE working
+
+
+#ifdef ENABLE_CEC_CWTX_EXPERT
+	//EXPERT MODE IS ALWAYS USING ADC, IAMBIC.A,IAMBIC.B, STRAIGHT
+	if (CW_Mode != CWMODE_NONE && (gScreenToDisplay == DISPLAY_MAIN ))
+	{
+		//CW KEY CHECK
+		char keyStatus = update_PaddleLatch(0);
+		if (keyStatus > 0)
+		{
+			//gFlagPrepareTX = true;
+			CWTXStart(1, 0);
+			//CWTXStart(130, 0, NULL);
+		}
+	}
+#else	
+	if (CW_Mode != CWMODE_NONE && (CW_KeyType == CW_KEYTYPE_STRAIGHT || CW_KeyType == CW_KEYTYPE_PADDLE) && (gScreenToDisplay == DISPLAY_MAIN ))
+	{
+		//CW KEY CHECK
+		uint8_t keyStatus = GetCWKeyStatus();
+		if (keyStatus > CWKEY_STATUS_IDLE)
+		{
+			//gFlagPrepareTX = true;
+			CWTXStart(1, 0);
+			//CWTXStart(130, 0, NULL);
+		}
+	}
+#endif	
+
 
 	// scan the hardware keys
 	KEY_Code_t Key = KEYBOARD_Poll();
@@ -1317,6 +1365,7 @@ void APP_TimeSlice500ms(void)
 		}
 	}
 
+#ifdef ENABLE_DTMF_RECEIVE
 	if (gDTMF_RX_live_timeout > 0)
 	{
 		#ifdef ENABLE_RSSI_BAR
@@ -1334,6 +1383,7 @@ void APP_TimeSlice500ms(void)
 			}
 		}
 	}
+#endif
 
 	if (gMenuCountdown > 0)
 		if (--gMenuCountdown == 0)
@@ -1611,6 +1661,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 		if (Key == KEY_EXIT && bKeyHeld)
 		{	// exit key held pressed
 
+#ifdef ENABLE_DTMF_RECEIVE
 			// clear the live DTMF decoder
 			if (gDTMF_RX_live[0] != 0)
 			{
@@ -1618,6 +1669,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 				gDTMF_RX_live_timeout = 0;
 				gUpdateDisplay        = true;
 			}
+#endif			
 
 			// cancel user input
 			cancelUserInputModes();
@@ -1774,10 +1826,14 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 					BK4819_ExitDTMF_TX(false);
 
+#ifdef ENABLE_SCRAMBLER
 					if (gCurrentVfo->SCRAMBLING_TYPE == 0 || !gSetting_ScrambleEnable)
+#endif					
 						BK4819_DisableScramble();
+#ifdef ENABLE_SCRAMBLER
 					else
 						BK4819_EnableScramble(gCurrentVfo->SCRAMBLING_TYPE - 1);
+#endif	
 				}
 			}
 			else

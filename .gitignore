@@ -9,3 +9,7 @@ compile_commands.json
 .vscode
 /docs
 k5_eeprom.raw
+hf-si4732/external
+hf-si4732/firmware
+hf-si4732/firmware.bin
+hf-si4732/firmware.packed.bin

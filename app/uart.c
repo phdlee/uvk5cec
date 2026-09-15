@@ -42,6 +42,7 @@
 	#include "sram-overlay.h"
 #endif
 
+#include "driver/systick.h"
 
 #define DMA_INDEX(x, y) (((x) + (y)) % sizeof(UART_DMA_Buffer))
 
@@ -471,6 +472,48 @@ static void CMD_0602_WriteBK4819Reg(const uint8_t *pBuffer)
 	BK4819_WriteRegister(cmd->reg, cmd->value);
 }
 #endif
+
+extern uint8_t CECSWUart_LastError;
+uint8_t CECHWUartClearBuffer(void)
+{
+	gUART_WriteIndex = DMA_CH0->ST & 0xFFFU;
+}
+
+uint8_t IsUartEmpty()
+{
+	return (gUART_WriteIndex == (DMA_CH0->ST & 0xFFFU));
+}
+
+uint8_t CECHWUartReadByte(int _timeoutCount)
+{
+	uint16_t DmaLength = 0;
+
+	while (1)
+	{
+		DmaLength = DMA_CH0->ST & 0xFFFU;
+		if (gUART_WriteIndex == DmaLength)
+		{
+			if (--_timeoutCount < 10)
+			{
+				CECSWUart_LastError = 1;
+				return 0;
+			}
+			SYSTICK_DelayUs(1);
+		}
+		else
+			break;
+	}
+
+	//Read 1byte and return
+	uint8_t readedByte = UART_DMA_Buffer[gUART_WriteIndex++];
+	
+	if (gUART_WriteIndex == sizeof(UART_DMA_Buffer))
+		gUART_WriteIndex = 0;
+
+	CECSWUart_LastError = 0;
+	return readedByte;
+}
+
 
 bool UART_IsCommandAvailable(void)
 {

@@ -48,7 +48,8 @@ enum BK4819_FilterBandwidth_t
 {
 	BK4819_FILTER_BW_WIDE = 0,
 	BK4819_FILTER_BW_NARROW,
-	BK4819_FILTER_BW_NARROWER
+	BK4819_FILTER_BW_NARROWER,
+	BK4819_FILTER_BW_CW,	//KD8CEC
 };
 
 typedef enum BK4819_FilterBandwidth_t BK4819_FilterBandwidth_t;
@@ -81,7 +82,10 @@ void     BK4819_SetCDCSSCodeWord(uint32_t CodeWord);
 void     BK4819_SetCTCSSFrequency(uint32_t BaudRate);
 void     BK4819_SetTailDetection(const uint32_t freq_10Hz);
 void     BK4819_EnableVox(uint16_t Vox1Threshold, uint16_t Vox0Threshold);
-void     BK4819_SetFilterBandwidth(const BK4819_FilterBandwidth_t Bandwidth, const bool weak_no_different);
+
+//Changed by KD8CEC
+//void     BK4819_SetFilterBandwidth(const BK4819_FilterBandwidth_t Bandwidth, const bool weak_no_different);
+void 	 BK4819_SetFilterBandwidth(const BK4819_FilterBandwidth_t Bandwidth, const uint8_t _modulation, const bool weak_no_different);
 void     BK4819_SetupPowerAmplifier(const uint8_t bias, const uint32_t frequency);
 void     BK4819_SetFrequency(uint32_t Frequency);
 void     BK4819_SetupSquelch(
