@@ -11,6 +11,10 @@ This repository now contains the **latest CEC mainline source** used for the 0.3
 - Releases (binaries): https://github.com/phdlee/uvk5cec/releases
 - Earlier note about waiting for version 1.0 is historical; source is open as of **September 15, 2026**.
 
+### Why the source upload was delayed
+
+I originally planned to open the full tree at version 1.0. After that, school lectures and other projects kept me very busy, and I already had many earlier projects in progress — including other open-source work — so it was hard to return to this firmware and finish a clean release. Now that AI tools are available, I used that help to organize and upload the complete source.
+
 Experimental firmware — use at your own risk and follow local regulations.
 
 DE KD8CEC
